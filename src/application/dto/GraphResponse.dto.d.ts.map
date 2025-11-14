@@ -1,0 +1,1 @@
+{"version":3,"file":"GraphResponse.dto.d.ts","sourceRoot":"","sources":["GraphResponse.dto.ts"],"names":[],"mappings":"AAAA;;GAEG;AAEH,OAAO,EAAE,aAAa,EAAE,MAAM,wCAAwC,CAAC;AAEvE,MAAM,WAAW,aAAa;IAC5B,OAAO,EAAE,MAAM,CAAC;IAChB,SAAS,EAAE,MAAM,CAAC;IAClB,SAAS,EAAE,MAAM,CAAC;IAClB,QAAQ,EAAE,aAAa,CAAC;IACxB,OAAO,EAAE,OAAO,CAAC;IACjB,KAAK,CAAC,EAAE,MAAM,CAAC;CAChB"}
