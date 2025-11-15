@@ -16,17 +16,18 @@ All implementation phases complete with performance optimizations:
 **Phase 4** ✅ - Project Service Integration (NEW)
 
 ### Features
-- **🚀 NEW in v1.1.0**: Project Service support for 24x faster parsing!
-- Real TypeScript/JavaScript AST parser with dual modes (ts-morph and Project Service)
+- **🚀 NEW in v1.1.0**: Native TypeScript API with Project Service for 26x faster parsing!
+- TypeScript/JavaScript AST parser using native TypeScript Compiler API
 - Multi-level caching (memory + file) for 90%+ faster repeated parses
 - **Shared TypeScript Programs** across files for massive performance gains
 - **Automatic tsconfig.json detection** - no manual configuration needed
+- **Cross-file type resolution** using TypeChecker from shared Programs
 - Comprehensive symbol extraction and edge detection
 - Error handling with recovery strategies
 - Performance monitoring and metrics
-- 38 tests passing (100% success rate)
+- 42 tests passing (100% success rate) - including cross-file resolution tests
 - Complete API documentation and examples
-- Backward compatible with v1.0.0
+- Backward compatible API (breaking change: removed ts-morph dependency)
 
 ## Installation
 

@@ -21,14 +21,11 @@ describe('Project Service Integration (v1.1.0)', () => {
     const nodeFactory = new NodeFactory(logger as any);
     const edgeDetector = new EdgeDetector();
 
-    // Create parser with Project Service enabled
+    // Create parser (always uses Project Service in v1.1.0)
     parser = new TypeScriptParserImpl(logger, nodeFactory, edgeDetector, {
-      useProjectService: true,
-      projectService: {
-        tsconfigRootDir: process.cwd(),
-        allowDefaultProject: ['**/*.ts', '**/*.tsx'],
-        maximumDefaultProjectFileMatchCount: 100,
-      },
+      tsconfigRootDir: process.cwd(),
+      allowDefaultProject: ['**/*.ts', '**/*.tsx'],
+      maximumDefaultProjectFileMatchCount: 100,
     });
   });
 
