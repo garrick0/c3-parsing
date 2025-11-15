@@ -7,7 +7,7 @@ import { Parser, ParseResult } from '../ports/Parser.js';
 import { GraphRepository } from '../ports/GraphRepository.js';
 import { FileSystem } from '../ports/FileSystem.js';
 import { Cache } from '../ports/Cache.js';
-import { Logger } from '../../infrastructure/mocks/c3-shared.js';
+import { Logger } from 'c3-shared';
 import { GraphBuilder } from './GraphBuilder.js';
 import { FileInfo } from '../entities/FileInfo.js';
 import { Language, detectLanguage } from '../value-objects/Language.js';

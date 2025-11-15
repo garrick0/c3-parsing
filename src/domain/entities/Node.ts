@@ -2,7 +2,7 @@
  * Node - Represents a code element in the property graph
  */
 
-import { Entity } from '../../infrastructure/mocks/c3-shared.js';
+import { Entity } from 'c3-shared';
 import { NodeType } from '../value-objects/NodeType.js';
 
 export interface NodeMetadata {

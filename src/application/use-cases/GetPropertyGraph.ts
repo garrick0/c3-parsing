@@ -4,7 +4,7 @@
 
 import { PropertyGraph } from '../../domain/entities/PropertyGraph.js';
 import { ParsingService } from '../../domain/services/ParsingService.js';
-import { Logger } from '../../infrastructure/mocks/c3-shared.js';
+import { Logger } from 'c3-shared';
 
 export class GetPropertyGraphUseCase {
   constructor(

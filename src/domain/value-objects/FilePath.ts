@@ -2,7 +2,7 @@
  * FilePath - Value object for file paths
  */
 
-import { ValueObject } from '../../infrastructure/mocks/c3-shared.js';
+import { ValueObject } from 'c3-shared';
 
 interface FilePathProps {
   path: string;

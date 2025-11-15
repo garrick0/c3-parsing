@@ -96,8 +96,10 @@ interface ParserOptions {
 
 **Example:**
 ```typescript
+import { createLogger } from 'c3-shared';
+
 const factory = new ParserFactory({
-  logger: new ConsoleLogger()
+  logger: createLogger('ParserFactory')
 });
 
 const tsParser = factory.createParser('typescript');
@@ -783,9 +785,10 @@ import { TypeScriptParser } from 'c3-parsing';
 const parser = new TypeScriptParser(); // Returns mock data
 
 // New (v1.x - real parsers)
-import { TypeScriptParserImpl, ConsoleLogger, NodeFactory, EdgeDetector } from 'c3-parsing';
+import { TypeScriptParserImpl, NodeFactory, EdgeDetector } from 'c3-parsing';
+import { createLogger } from 'c3-shared';
 const parser = new TypeScriptParserImpl(
-  new ConsoleLogger(),
+  createLogger('Parser'),
   new NodeFactory(),
   new EdgeDetector()
 ); // Returns real AST data
@@ -798,7 +801,8 @@ const parser = new TypeScriptParserImpl(
 const parser = new TypeScriptParser();
 
 // New
-const factory = new ParserFactory({ logger: new ConsoleLogger() });
+import { createLogger } from 'c3-shared';
+const factory = new ParserFactory({ logger: createLogger('ParserFactory') });
 const parser = factory.createParser('typescript');
 ```
 

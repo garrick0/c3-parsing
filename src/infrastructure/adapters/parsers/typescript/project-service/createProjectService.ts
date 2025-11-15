@@ -12,7 +12,7 @@
 
 import * as ts from 'typescript';
 import { server as tsserver } from 'typescript/lib/tsserverlibrary';
-import { Logger } from '../../../../mocks/c3-shared.js';
+import { Logger } from 'c3-shared';
 
 export interface ProjectServiceAndMetadata {
   allowDefaultProject: string[] | undefined;

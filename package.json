@@ -71,6 +71,7 @@
     "vitest": "^1.0.4"
   },
   "dependencies": {
+    "c3-shared": "^0.1.0",
     "lru-cache": "^11.2.2",
     "minimatch": "^10.1.1"
   },

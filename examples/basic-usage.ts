@@ -6,16 +6,16 @@
 
 import {
   TypeScriptParserImpl,
-  ConsoleLogger,
   NodeFactory,
   EdgeDetector,
   FileInfo,
   Language
 } from '../dist/index.js';
+import { createLogger } from 'c3-shared';
 
 async function main() {
   // Create dependencies
-  const logger = new ConsoleLogger();
+  const logger = createLogger('BasicUsage');
   const nodeFactory = new NodeFactory();
   const edgeDetector = new EdgeDetector();
 

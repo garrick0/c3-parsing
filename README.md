@@ -45,12 +45,12 @@ npm install c3-parsing
 ### Basic Usage
 
 ```typescript
-import { TypeScriptParserImpl } from 'c3-parsing';
-import { ConsoleLogger, NodeFactory, EdgeDetector } from 'c3-parsing';
+import { TypeScriptParserImpl, NodeFactory, EdgeDetector } from 'c3-parsing';
+import { createLogger } from 'c3-shared';
 
 // Create parser (uses Project Service automatically for 26x faster parsing)
 const parser = new TypeScriptParserImpl(
-  new ConsoleLogger(),
+  createLogger('Parser'),
   new NodeFactory(),
   new EdgeDetector()
 );

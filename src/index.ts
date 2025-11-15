@@ -53,6 +53,3 @@ export * from './infrastructure/adapters/shared/PerformanceMonitor.js';
 
 // Infrastructure - Persistence
 export * from './infrastructure/persistence/InMemoryGraphRepository.js';
-
-// Infrastructure - Mocks (temporary)
-export * from './infrastructure/mocks/c3-shared.js';

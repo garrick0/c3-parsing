@@ -6,19 +6,19 @@
 
 import {
   TypeScriptParserImpl,
-  ConsoleLogger,
   NodeFactory,
   EdgeDetector,
   FileInfo,
   Language,
   EdgeType
 } from '../dist/index.js';
+import { createLogger } from 'c3-shared';
 
 async function main() {
   console.log('=== Dependency Analysis Example ===\n');
 
   // Create parser
-  const logger = new ConsoleLogger();
+  const logger = createLogger('DependencyAnalysis');
   const parser = new TypeScriptParserImpl(
     logger,
     new NodeFactory(),

@@ -2,7 +2,7 @@
  * Edge - Represents a relationship between nodes
  */
 
-import { Entity } from '../../infrastructure/mocks/c3-shared.js';
+import { Entity } from 'c3-shared';
 import { EdgeType } from '../value-objects/EdgeType.js';
 
 export interface EdgeMetadata {

@@ -14,7 +14,7 @@ import { minimatch } from 'minimatch';
 import path from 'node:path';
 import * as ts from 'typescript';
 import { server as tsserver } from 'typescript/lib/tsserverlibrary';
-import { Logger } from '../../../../mocks/c3-shared.js';
+import { Logger } from 'c3-shared';
 
 // Critical constants from typescript-eslint
 const RELOAD_THROTTLE_MS = 250; // Prevent excessive reloads

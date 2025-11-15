@@ -15,7 +15,7 @@ import { FileInfo } from '../../../../domain/entities/FileInfo.js';
 import { ParseResult } from '../../../../domain/ports/Parser.js';
 import { NodeFactory } from '../../../../domain/services/NodeFactory.js';
 import { EdgeDetector } from '../../../../domain/services/EdgeDetector.js';
-import { Logger } from '../../../mocks/c3-shared.js';
+import { Logger } from 'c3-shared';
 import { TSASTTransformer } from './TSASTTransformer.js';
 import { TSSymbolExtractor } from './TSSymbolExtractor.js';
 import { TSEdgeDetector } from './TSEdgeDetector.js';

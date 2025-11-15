@@ -6,7 +6,6 @@
 
 import {
   TypeScriptParserImpl,
-  ConsoleLogger,
   NodeFactory,
   EdgeDetector,
   FileInfo,
@@ -15,12 +14,13 @@ import {
 import { CacheManager } from '../dist/infrastructure/adapters/cache/CacheManager.js';
 import { ParsingService } from '../dist/domain/services/ParsingService.js';
 import { InMemoryGraphRepository } from '../dist/infrastructure/persistence/InMemoryGraphRepository.js';
+import { createLogger } from 'c3-shared';
 
 async function main() {
   console.log('=== Parser with Caching Example ===\n');
 
   // Create dependencies
-  const logger = new ConsoleLogger();
+  const logger = createLogger('CachingExample');
   const nodeFactory = new NodeFactory();
   const edgeDetector = new EdgeDetector();
 

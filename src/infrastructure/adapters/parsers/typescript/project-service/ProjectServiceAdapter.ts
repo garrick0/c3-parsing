@@ -12,7 +12,7 @@
 
 import * as ts from 'typescript';
 import * as path from 'node:path';
-import { Logger } from '../../../../mocks/c3-shared.js';
+import { Logger } from 'c3-shared';
 import { createProjectService, type ProjectServiceAndMetadata } from './createProjectService.js';
 import { useProgramFromProjectService, type ASTAndProgram, type ParseSettings } from './useProgramFromProjectService.js';
 import { FileInfo } from '../../../../../domain/entities/FileInfo.js';

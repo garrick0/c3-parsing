@@ -6,7 +6,7 @@ import { Parser } from '../../../../domain/ports/Parser.js';
 import { Language } from '../../../../domain/value-objects/Language.js';
 import { NodeFactory } from '../../../../domain/services/NodeFactory.js';
 import { EdgeDetector } from '../../../../domain/services/EdgeDetector.js';
-import { Logger } from '../../../mocks/c3-shared.js';
+import { Logger } from 'c3-shared';
 
 // Import stub parsers for backward compatibility
 import { TypeScriptParser as StubTypeScriptParser } from '../../TypeScriptParser.js';

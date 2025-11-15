@@ -6,7 +6,7 @@ import { ParseResult } from '../../../domain/ports/Parser.js';
 import { Cache, CacheStats } from '../../../domain/ports/Cache.js';
 import { MemoryCache, MemoryCacheOptions } from './MemoryCache.js';
 import { FileCache, FileCacheOptions } from './FileCache.js';
-import { Logger } from '../../mocks/c3-shared.js';
+import { Logger } from 'c3-shared';
 import { createHash } from 'crypto';
 
 export interface CacheManagerOptions {

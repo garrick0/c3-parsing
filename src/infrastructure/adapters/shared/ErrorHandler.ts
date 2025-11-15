@@ -2,7 +2,7 @@
  * ErrorHandler - Centralized error handling and recovery
  */
 
-import { Logger } from '../../mocks/c3-shared.js';
+import { Logger } from 'c3-shared';
 import { ParseResult } from '../../../domain/ports/Parser.js';
 import { FileInfo } from '../../../domain/entities/FileInfo.js';
 

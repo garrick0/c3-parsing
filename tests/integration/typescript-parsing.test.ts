@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { TypeScriptParserImpl } from '../../src/infrastructure/adapters/parsers/typescript/TypeScriptParserImpl.js';
 import { NodeFactory } from '../../src/domain/services/NodeFactory.js';
 import { EdgeDetector } from '../../src/domain/services/EdgeDetector.js';
-import { ConsoleLogger } from '../../src/infrastructure/mocks/c3-shared.js';
+import { createLogger, Logger } from 'c3-shared';
 import { createTestFileInfo } from '../test-utils/helpers.js';
 import { NodeType } from '../../src/domain/value-objects/NodeType.js';
 import { EdgeType } from '../../src/domain/value-objects/EdgeType.js';
@@ -11,12 +11,12 @@ describe('TypeScript Parser Integration', () => {
   let parser: TypeScriptParserImpl;
   let nodeFactory: NodeFactory;
   let edgeDetector: EdgeDetector;
-  let logger: ConsoleLogger;
+  let logger: Logger;
 
   // Use beforeAll to share parser across all tests
   // This demonstrates Program sharing and makes tests 3-4x faster
   beforeAll(() => {
-    logger = new ConsoleLogger();
+    logger = createLogger('TypeScriptParserTest');
     nodeFactory = new NodeFactory();
     edgeDetector = new EdgeDetector();
     parser = new TypeScriptParserImpl(logger, nodeFactory, edgeDetector);
