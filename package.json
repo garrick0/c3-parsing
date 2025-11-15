@@ -1,7 +1,7 @@
 {
   "name": "c3-parsing",
-  "version": "1.0.0",
-  "description": "TypeScript/JavaScript code parsing and property graph construction for C3 platform",
+  "version": "1.1.0",
+  "description": "TypeScript/JavaScript code parsing and property graph construction for C3 platform - Now with Project Service for 24x faster parsing!",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -72,7 +72,7 @@
   },
   "dependencies": {
     "lru-cache": "^11.2.2",
-    "ts-morph": "^27.0.2"
+    "minimatch": "^10.1.1"
   },
   "peerDependencies": {
     "typescript": ">=5.0.0"

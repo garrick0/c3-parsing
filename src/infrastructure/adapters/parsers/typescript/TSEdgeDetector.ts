@@ -1,239 +1,199 @@
 /**
- * TSEdgeDetector - Detects edges/relationships in TypeScript AST
+ * TSEdgeDetector - Detects relationships between TypeScript elements
+ *
+ * REFACTORED: Now uses native TypeScript API instead of ts-morph
+ * Pattern: Uses TypeChecker for cross-file edge detection
+ *
+ * With shared Programs, we can now detect edges across files!
  */
 
-import {
-  SourceFile,
-  ClassDeclaration,
-  InterfaceDeclaration,
-  ImportDeclaration,
-  ExportDeclaration,
-  CallExpression,
-  PropertyAccessExpression,
-  Identifier,
-  Node as TSNode,
-  SyntaxKind,
-  ts,
-  MethodDeclaration,
-  FunctionDeclaration,
-  VariableDeclaration
-} from 'ts-morph';
-
+import * as ts from 'typescript';
 import { Edge } from '../../../../domain/entities/Edge.js';
 import { EdgeType } from '../../../../domain/value-objects/EdgeType.js';
+import * as helpers from './helpers/nodeHelpers.js';
 
-export interface DetectedEdge {
-  type: EdgeType;
-  source: string;
-  target: string;
-  metadata?: Record<string, any>;
-}
-
+/**
+ * Detects edges/relationships between TypeScript elements
+ */
 export class TSEdgeDetector {
-  private edgeIdCounter = 0;
-
   /**
    * Detect all edges in a source file
+   *
+   * @param sourceFile - Native TypeScript SourceFile
+   * @param program - TypeScript Program (provides TypeChecker)
    */
-  async detectEdges(sourceFile: SourceFile): Promise<Edge[]> {
+  async detectEdges(
+    sourceFile: ts.SourceFile,
+    program: ts.Program
+  ): Promise<Edge[]> {
+    const typeChecker = program.getTypeChecker();
     const edges: Edge[] = [];
 
-    // Detect import dependencies
+    // Detect import edges
     this.detectImportEdges(sourceFile, edges);
 
-    // Detect inheritance relationships
-    this.detectInheritanceEdges(sourceFile, edges);
+    // Detect inheritance edges (extends/implements)
+    this.detectInheritanceEdges(sourceFile, typeChecker, edges);
 
-    // Detect function calls
-    this.detectCallEdges(sourceFile, edges);
+    // Detect call edges (function calls)
+    this.detectCallEdges(sourceFile, typeChecker, edges);
 
-    // Detect property access/references
-    this.detectReferenceEdges(sourceFile, edges);
+    // Detect reference edges
+    this.detectReferenceEdges(sourceFile, typeChecker, edges);
 
-    // Detect containment relationships
+    // Detect containment edges
     this.detectContainmentEdges(sourceFile, edges);
 
     return edges;
   }
 
   /**
-   * Detect import dependencies
+   * Detect import edges
    */
-  private detectImportEdges(sourceFile: SourceFile, edges: Edge[]): void {
-    const filePath = sourceFile.getFilePath();
+  private detectImportEdges(
+    sourceFile: ts.SourceFile,
+    edges: Edge[]
+  ): void {
+    const imports = helpers.getImportDeclarations(sourceFile);
 
-    sourceFile.getImportDeclarations().forEach(importDecl => {
-      const moduleSpecifier = importDecl.getModuleSpecifierValue();
+    for (const importDecl of imports) {
+      const moduleSpecifier = importDecl.moduleSpecifier;
 
-      // Create import edge
-      edges.push(this.createEdge(
-        EdgeType.IMPORTS,
-        filePath,
-        moduleSpecifier,
-        {
-          isTypeOnly: importDecl.isTypeOnly(),
-          importedSymbols: this.getImportedSymbols(importDecl)
-        }
-      ));
+      if (ts.isStringLiteral(moduleSpecifier)) {
+        edges.push(new Edge(
+          this.generateEdgeId(),
+          EdgeType.IMPORTS,
+          sourceFile.fileName,
+          moduleSpecifier.text,
+          {
+            isTypeOnly: (importDecl as any).isTypeOnly,
+          }
+        ));
+      }
+    }
+  }
 
-      // Create dependency edge
-      edges.push(this.createEdge(
-        EdgeType.DEPENDS_ON,
-        filePath,
-        moduleSpecifier,
-        {
-          dependencyType: 'import'
-        }
-      ));
-    });
+  /**
+   * Detect inheritance edges (extends/implements)
+   */
+  private detectInheritanceEdges(
+    sourceFile: ts.SourceFile,
+    typeChecker: ts.TypeChecker,
+    edges: Edge[]
+  ): void {
+    const classes = helpers.getClasses(sourceFile);
 
-    // Also detect dynamic imports
-    sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression).forEach(callExpr => {
-      const expression = callExpr.getExpression();
-      if (expression.getText() === 'import' || expression.getText() === 'require') {
-        const args = callExpr.getArguments();
-        if (args.length > 0 && args[0].getKind() === SyntaxKind.StringLiteral) {
-          const modulePath = args[0].getText().slice(1, -1); // Remove quotes
+    for (const cls of classes) {
+      if (!cls.name) continue;
 
-          edges.push(this.createEdge(
-            EdgeType.IMPORTS,
-            filePath,
-            modulePath,
+      const className = cls.name.getText(sourceFile);
+
+      // Detect extends edges
+      const extendsClause = helpers.getExtendsClause(cls);
+      if (extendsClause) {
+        for (const type of extendsClause.types) {
+          const baseClassName = type.expression.getText(sourceFile);
+
+          edges.push(new Edge(
+            this.generateEdgeId(),
+            EdgeType.EXTENDS,
+            className,
+            baseClassName,
             {
-              isDynamic: true
+              kind: 'class-extends',
             }
           ));
+        }
+      }
 
-          edges.push(this.createEdge(
-            EdgeType.DEPENDS_ON,
-            filePath,
-            modulePath,
+      // Detect implements edges
+      const implementsClause = helpers.getImplementsClause(cls);
+      if (implementsClause) {
+        for (const type of implementsClause.types) {
+          const interfaceName = type.expression.getText(sourceFile);
+
+          edges.push(new Edge(
+            this.generateEdgeId(),
+            EdgeType.IMPLEMENTS,
+            className,
+            interfaceName,
             {
-              dependencyType: 'dynamic-import'
+              kind: 'class-implements',
             }
           ));
         }
       }
-    });
+    }
+
+    // Detect interface extends
+    const interfaces = helpers.getInterfaces(sourceFile);
+
+    for (const iface of interfaces) {
+      const interfaceName = iface.name.getText(sourceFile);
+
+      const extendsClause = helpers.getExtendsClause(iface);
+      if (extendsClause) {
+        for (const type of extendsClause.types) {
+          const baseInterfaceName = type.expression.getText(sourceFile);
+
+          edges.push(new Edge(
+            this.generateEdgeId(),
+            EdgeType.EXTENDS,
+            interfaceName,
+            baseInterfaceName,
+            {
+              kind: 'interface-extends',
+            }
+          ));
+        }
+      }
+    }
   }
 
   /**
-   * Detect inheritance relationships (extends, implements)
+   * Detect call edges (function/method calls)
+   *
+   * With TypeChecker, we can now resolve cross-file calls!
    */
-  private detectInheritanceEdges(sourceFile: SourceFile, edges: Edge[]): void {
-    // Class inheritance
-    sourceFile.getClasses().forEach(cls => {
-      const className = cls.getName() || 'AnonymousClass';
+  private detectCallEdges(
+    sourceFile: ts.SourceFile,
+    typeChecker: ts.TypeChecker,
+    edges: Edge[]
+  ): void {
+    helpers.visitAllNodes(sourceFile, node => {
+      if (ts.isCallExpression(node)) {
+        // Try to resolve the call target
+        const signature = typeChecker.getResolvedSignature(node);
 
-      // Extends relationship
-      const extendsExpr = cls.getExtends();
-      if (extendsExpr) {
-        const parentName = extendsExpr.getText();
-        edges.push(this.createEdge(
-          EdgeType.EXTENDS,
-          className,
-          parentName,
-          {
-            sourceType: 'class',
-            targetType: 'class'
+        if (signature && signature.declaration) {
+          const declaration = signature.declaration;
+
+          // Get source (caller)
+          let source: string | undefined;
+          let currentNode: ts.Node | undefined = node;
+          while (currentNode) {
+            if (ts.isFunctionDeclaration(currentNode) ||
+                ts.isMethodDeclaration(currentNode)) {
+              source = currentNode.name?.getText(sourceFile);
+              break;
+            }
+            currentNode = currentNode.parent;
           }
-        ));
-      }
 
-      // Implements relationships
-      cls.getImplements().forEach(impl => {
-        const interfaceName = impl.getText();
-        edges.push(this.createEdge(
-          EdgeType.IMPLEMENTS,
-          className,
-          interfaceName,
-          {
-            sourceType: 'class',
-            targetType: 'interface'
+          // Get target (callee) - check if declaration has name property
+          let target: string | undefined;
+          if ('name' in declaration && declaration.name) {
+            target = declaration.name.getText();
           }
-        ));
-      });
-    });
 
-    // Interface inheritance
-    sourceFile.getInterfaces().forEach(iface => {
-      const interfaceName = iface.getName();
-
-      iface.getExtends().forEach(ext => {
-        const parentName = ext.getText();
-        edges.push(this.createEdge(
-          EdgeType.EXTENDS,
-          interfaceName,
-          parentName,
-          {
-            sourceType: 'interface',
-            targetType: 'interface'
-          }
-        ));
-      });
-    });
-  }
-
-  /**
-   * Detect function call edges
-   */
-  private detectCallEdges(sourceFile: SourceFile, edges: Edge[]): void {
-    sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression).forEach(callExpr => {
-      const caller = this.getContainingFunction(callExpr);
-      const callee = this.getCallTarget(callExpr);
-
-      if (caller && callee) {
-        edges.push(this.createEdge(
-          EdgeType.CALLS,
-          caller,
-          callee,
-          {
-            arguments: callExpr.getArguments().length,
-            isAsync: this.isAsyncCall(callExpr)
-          }
-        ));
-      }
-    });
-  }
-
-  /**
-   * Detect reference edges (variable references, property access)
-   */
-  private detectReferenceEdges(sourceFile: SourceFile, edges: Edge[]): void {
-    // Detect property access
-    sourceFile.getDescendantsOfKind(SyntaxKind.PropertyAccessExpression).forEach(propAccess => {
-      const accessor = this.getContainingFunction(propAccess);
-      const property = propAccess.getName();
-      const object = propAccess.getExpression().getText();
-
-      if (accessor && property) {
-        edges.push(this.createEdge(
-          EdgeType.REFERENCES,
-          accessor,
-          `${object}.${property}`,
-          {
-            referenceType: 'property'
-          }
-        ));
-      }
-    });
-
-    // Detect identifier references
-    sourceFile.getDescendantsOfKind(SyntaxKind.Identifier).forEach(identifier => {
-      const symbol = identifier.getSymbol();
-      if (symbol) {
-        const declarations = symbol.getDeclarations();
-        if (declarations.length > 0) {
-          const accessor = this.getContainingFunction(identifier);
-          const target = symbol.getName();
-
-          if (accessor && target && !this.isDeclaration(identifier)) {
-            edges.push(this.createEdge(
-              EdgeType.REFERENCES,
-              accessor,
+          if (source && target) {
+            edges.push(new Edge(
+              this.generateEdgeId(),
+              EdgeType.CALLS,
+              source,
               target,
               {
-                referenceType: 'identifier'
+                kind: 'function-call',
               }
             ));
           }
@@ -243,234 +203,119 @@ export class TSEdgeDetector {
   }
 
   /**
-   * Detect containment relationships
+   * Detect reference edges
    */
-  private detectContainmentEdges(sourceFile: SourceFile, edges: Edge[]): void {
-    const filePath = sourceFile.getFilePath();
+  private detectReferenceEdges(
+    sourceFile: ts.SourceFile,
+    typeChecker: ts.TypeChecker,
+    edges: Edge[]
+  ): void {
+    helpers.visitAllNodes(sourceFile, node => {
+      if (ts.isIdentifier(node)) {
+        const symbol = typeChecker.getSymbolAtLocation(node);
 
-    // File contains classes
-    sourceFile.getClasses().forEach(cls => {
-      const className = cls.getName() || 'AnonymousClass';
-      edges.push(this.createEdge(
-        EdgeType.CONTAINS,
-        filePath,
-        className,
-        { containedType: 'class' }
-      ));
+        if (symbol && symbol.declarations) {
+          for (const declaration of symbol.declarations) {
+            // Check if declaration is in a different file
+            if (declaration.getSourceFile() !== sourceFile) {
+              const targetFile = declaration.getSourceFile().fileName;
+
+              edges.push(new Edge(
+                this.generateEdgeId(),
+                EdgeType.REFERENCES,
+                sourceFile.fileName,
+                targetFile,
+                {
+                  symbol: node.getText(sourceFile),
+                  kind: 'cross-file-reference',
+                }
+              ));
+            }
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * Detect containment edges (class contains method, etc.)
+   */
+  private detectContainmentEdges(
+    sourceFile: ts.SourceFile,
+    edges: Edge[]
+  ): void {
+    // Process classes
+    const classes = helpers.getClasses(sourceFile);
+
+    for (const cls of classes) {
+      if (!cls.name) continue;
+
+      const className = cls.name.getText(sourceFile);
 
       // Class contains methods
-      cls.getMethods().forEach(method => {
-        edges.push(this.createEdge(
+      const methods = helpers.getMethods(cls);
+      for (const method of methods) {
+        const methodName = method.name.getText(sourceFile);
+
+        edges.push(new Edge(
+          this.generateEdgeId(),
           EdgeType.CONTAINS,
           className,
-          `${className}.${method.getName()}`,
-          { containedType: 'method' }
+          methodName,
+          {
+            kind: 'class-contains-method',
+          }
         ));
-      });
+      }
 
       // Class contains properties
-      cls.getProperties().forEach(prop => {
-        edges.push(this.createEdge(
+      const properties = helpers.getProperties(cls);
+      for (const prop of properties) {
+        const propName = prop.name.getText(sourceFile);
+
+        edges.push(new Edge(
+          this.generateEdgeId(),
           EdgeType.CONTAINS,
           className,
-          `${className}.${prop.getName()}`,
-          { containedType: 'property' }
+          propName,
+          {
+            kind: 'class-contains-property',
+          }
         ));
-      });
-    });
-
-    // File contains interfaces
-    sourceFile.getInterfaces().forEach(iface => {
-      const interfaceName = iface.getName();
-      edges.push(this.createEdge(
-        EdgeType.CONTAINS,
-        filePath,
-        interfaceName,
-        { containedType: 'interface' }
-      ));
-    });
-
-    // File contains functions
-    sourceFile.getFunctions().forEach(func => {
-      const functionName = func.getName() || 'AnonymousFunction';
-      edges.push(this.createEdge(
-        EdgeType.CONTAINS,
-        filePath,
-        functionName,
-        { containedType: 'function' }
-      ));
-    });
-
-    // File contains variables
-    sourceFile.getVariableDeclarations().forEach(varDecl => {
-      edges.push(this.createEdge(
-        EdgeType.CONTAINS,
-        filePath,
-        varDecl.getName(),
-        { containedType: 'variable' }
-      ));
-    });
-
-    // File contains enums
-    sourceFile.getEnums().forEach(enumDecl => {
-      edges.push(this.createEdge(
-        EdgeType.CONTAINS,
-        filePath,
-        enumDecl.getName(),
-        { containedType: 'enum' }
-      ));
-    });
-
-    // File contains type aliases
-    sourceFile.getTypeAliases().forEach(typeAlias => {
-      edges.push(this.createEdge(
-        EdgeType.CONTAINS,
-        filePath,
-        typeAlias.getName(),
-        { containedType: 'type' }
-      ));
-    });
-  }
-
-  /**
-   * Get imported symbols from an import declaration
-   */
-  private getImportedSymbols(importDecl: ImportDeclaration): string[] {
-    const symbols: string[] = [];
-
-    // Named imports
-    importDecl.getNamedImports().forEach(named => {
-      symbols.push(named.getName());
-    });
-
-    // Default import
-    const defaultImport = importDecl.getDefaultImport();
-    if (defaultImport) {
-      symbols.push(defaultImport.getText());
+      }
     }
 
-    // Namespace import
-    const namespaceImport = importDecl.getNamespaceImport();
-    if (namespaceImport) {
-      symbols.push(`* as ${namespaceImport.getText()}`);
-    }
+    // Process interfaces
+    const interfaces = helpers.getInterfaces(sourceFile);
 
-    return symbols;
-  }
+    for (const iface of interfaces) {
+      const interfaceName = iface.name.getText(sourceFile);
 
-  /**
-   * Get the containing function of a node
-   */
-  private getContainingFunction(node: TSNode): string | null {
-    let current: TSNode | undefined = node.getParent();
+      // Interface contains members
+      for (const member of iface.members) {
+        if (ts.isPropertySignature(member) || ts.isMethodSignature(member)) {
+          const memberName = member.name?.getText(sourceFile);
 
-    while (current) {
-      const kind = current.getKind();
-
-      if (kind === SyntaxKind.FunctionDeclaration) {
-        return (current as FunctionDeclaration).getName() || 'AnonymousFunction';
-      }
-
-      if (kind === SyntaxKind.MethodDeclaration) {
-        const method = current as MethodDeclaration;
-        const className = method.getParent()?.getSymbol()?.getName();
-        return className ? `${className}.${method.getName()}` : method.getName();
-      }
-
-      if (kind === SyntaxKind.ArrowFunction || kind === SyntaxKind.FunctionExpression) {
-        const parent = current.getParent();
-        if (parent?.getKind() === SyntaxKind.VariableDeclaration) {
-          return (parent as VariableDeclaration).getName();
+          if (memberName) {
+            edges.push(new Edge(
+              this.generateEdgeId(),
+              EdgeType.CONTAINS,
+              interfaceName,
+              memberName,
+              {
+                kind: 'interface-contains-member',
+              }
+            ));
+          }
         }
-        return 'AnonymousFunction';
-      }
-
-      if (kind === SyntaxKind.Constructor) {
-        const className = current.getParent()?.getSymbol()?.getName();
-        return className ? `${className}.constructor` : 'constructor';
-      }
-
-      current = current.getParent();
-    }
-
-    // If not in a function, use the file path
-    return node.getSourceFile().getFilePath();
-  }
-
-  /**
-   * Get the target of a function call
-   */
-  private getCallTarget(callExpr: CallExpression): string | null {
-    const expression = callExpr.getExpression();
-
-    if (expression.getKind() === SyntaxKind.Identifier) {
-      return expression.getText();
-    }
-
-    if (expression.getKind() === SyntaxKind.PropertyAccessExpression) {
-      return expression.getText();
-    }
-
-    // For other cases (e.g., function expressions)
-    return expression.getText();
-  }
-
-  /**
-   * Check if a call is async
-   */
-  private isAsyncCall(callExpr: CallExpression): boolean {
-    const parent = callExpr.getParent();
-    return parent?.getKind() === SyntaxKind.AwaitExpression;
-  }
-
-  /**
-   * Check if an identifier is a declaration (not a reference)
-   */
-  private isDeclaration(identifier: Identifier): boolean {
-    const parent = identifier.getParent();
-    if (!parent) return false;
-
-    const kind = parent.getKind();
-
-    // Check if it's part of a declaration
-    if (kind === SyntaxKind.VariableDeclaration ||
-        kind === SyntaxKind.FunctionDeclaration ||
-        kind === SyntaxKind.ClassDeclaration ||
-        kind === SyntaxKind.InterfaceDeclaration ||
-        kind === SyntaxKind.TypeAliasDeclaration ||
-        kind === SyntaxKind.EnumDeclaration) {
-
-      // Check if the identifier is the name of the declaration
-      if ('getName' in parent && (parent as any).getName() === identifier.getText()) {
-        return true;
       }
     }
-
-    return false;
-  }
-
-  /**
-   * Create an edge
-   */
-  private createEdge(
-    type: EdgeType,
-    source: string,
-    target: string,
-    metadata?: Record<string, any>
-  ): Edge {
-    return new Edge(
-      this.generateEdgeId(),
-      type,
-      source,
-      target,
-      metadata || {}
-    );
   }
 
   /**
    * Generate unique edge ID
    */
   private generateEdgeId(): string {
-    return `edge-${this.edgeIdCounter++}-${Date.now()}`;
+    return `edge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }

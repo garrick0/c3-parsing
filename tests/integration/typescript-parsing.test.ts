@@ -76,7 +76,7 @@ describe('TypeScript Parser Integration', () => {
       // Should detect interfaces in containment edges
       const containsEdges = result.edges.filter(e => e.type === EdgeType.CONTAINS);
       const interfaceContainment = containsEdges.filter(e =>
-        e.metadata?.containedType === 'interface'
+        e.metadata?.kind === 'interface-contains-member'
       );
       expect(interfaceContainment.length).toBeGreaterThanOrEqual(2);
 
@@ -258,11 +258,11 @@ describe('TypeScript Parser Integration', () => {
       const containsEdges = result.edges.filter(e => e.type === EdgeType.CONTAINS);
       expect(containsEdges.length).toBeGreaterThan(0);
 
-      // File should contain class
-      const fileContainsClass = containsEdges.find(e =>
-        e.fromNodeId.includes('.ts') && e.metadata?.containedType === 'class'
+      // Class should contain methods and properties
+      const classContainment = containsEdges.find(e =>
+        e.metadata?.kind === 'class-contains-method' || e.metadata?.kind === 'class-contains-property'
       );
-      expect(fileContainsClass).toBeDefined();
+      expect(classContainment).toBeDefined();
     });
   });
 

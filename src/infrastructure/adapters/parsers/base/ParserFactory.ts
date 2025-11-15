@@ -63,15 +63,16 @@ export class ParserFactory {
    * Register real parsers (Phase 2)
    */
   private registerRealParsers(): void {
-    // TypeScript real parser
+    // TypeScript real parser (v1.1.0 - uses Project Service)
     const tsRealParser = new TypeScriptParserImpl(
       this.options.logger,
       this.nodeFactory,
       this.edgeDetector,
       {
+        tsconfigRootDir: process.cwd(),
+        allowDefaultProject: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
         includeComments: false,
-        resolveModules: true,
-        extractTypes: true
+        includePrivateMembers: false,
       }
     );
 

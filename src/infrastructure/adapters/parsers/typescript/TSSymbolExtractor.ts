@@ -1,47 +1,33 @@
 /**
  * TSSymbolExtractor - Extracts symbols from TypeScript AST
+ *
+ * REFACTORED: Now uses native TypeScript API instead of ts-morph
+ * Pattern: Uses TypeChecker for accurate symbol information
+ *
+ * This allows us to work with shared Programs from Project Service.
  */
 
-import {
-  SourceFile,
-  ClassDeclaration,
-  InterfaceDeclaration,
-  FunctionDeclaration,
-  VariableDeclaration,
-  TypeAliasDeclaration,
-  EnumDeclaration,
-  MethodDeclaration,
-  PropertyDeclaration,
-  ImportDeclaration,
-  ExportDeclaration,
-  SyntaxKind,
-  VariableDeclarationKind,
-  Node as TSNode
-} from 'ts-morph';
-
-import {
-  SymbolExtractor,
-  ExtractedSymbols,
-  ClassSymbol,
-  InterfaceSymbol,
-  FunctionSymbol,
-  VariableSymbol,
-  TypeSymbol,
-  EnumSymbol,
-  ImportSymbol,
-  ExportSymbol,
-  ParameterSymbol
-} from '../../../../domain/ports/SymbolExtractor.js';
+import * as ts from 'typescript';
 import { Symbol, SymbolKind } from '../../../../domain/entities/ast/UnifiedAST.js';
-import { createSourceLocation } from '../../../../domain/entities/ast/SourceLocation.js';
+import { ExtractedSymbols } from '../../../../domain/ports/SymbolExtractor.js';
+import * as helpers from './helpers/nodeHelpers.js';
 
+/**
+ * Extracts symbols from TypeScript source files using native API
+ */
 export class TSSymbolExtractor {
-  private symbolIdCounter = 0;
-
   /**
-   * Extract all symbols from a TypeScript source file
+   * Extract all symbols from a source file
+   *
+   * @param sourceFile - Native TypeScript SourceFile
+   * @param program - TypeScript Program (provides TypeChecker)
    */
-  async extractSymbols(sourceFile: SourceFile): Promise<ExtractedSymbols> {
+  async extractSymbols(
+    sourceFile: ts.SourceFile,
+    program: ts.Program
+  ): Promise<ExtractedSymbols> {
+    const typeChecker = program.getTypeChecker();
+
     const symbols: ExtractedSymbols = {
       classes: [],
       interfaces: [],
@@ -50,99 +36,59 @@ export class TSSymbolExtractor {
       types: [],
       enums: [],
       imports: [],
-      exports: []
+      exports: [],
     };
 
     // Extract classes
-    sourceFile.getClasses().forEach(cls => {
-      const classSymbol = this.extractClassSymbol(cls);
-      if (classSymbol) {
-        symbols.classes.push(classSymbol);
+    const classes = helpers.getClasses(sourceFile);
+    for (const cls of classes) {
+      const symbol = this.extractClassSymbol(cls, sourceFile, typeChecker);
+      if (symbol) {
+        symbols.classes.push(symbol);
       }
-    });
+    }
 
     // Extract interfaces
-    sourceFile.getInterfaces().forEach(iface => {
-      const interfaceSymbol = this.extractInterfaceSymbol(iface);
-      if (interfaceSymbol) {
-        symbols.interfaces.push(interfaceSymbol);
+    const interfaces = helpers.getInterfaces(sourceFile);
+    for (const iface of interfaces) {
+      const symbol = this.extractInterfaceSymbol(iface, sourceFile, typeChecker);
+      if (symbol) {
+        symbols.interfaces.push(symbol);
       }
-    });
+    }
 
     // Extract functions
-    sourceFile.getFunctions().forEach(func => {
-      const functionSymbol = this.extractFunctionSymbol(func);
-      if (functionSymbol) {
-        symbols.functions.push(functionSymbol);
+    const functions = helpers.getFunctions(sourceFile);
+    for (const fn of functions) {
+      const symbol = this.extractFunctionSymbol(fn, sourceFile, typeChecker);
+      if (symbol) {
+        symbols.functions.push(symbol);
       }
-    });
-
-    // Extract variables
-    sourceFile.getVariableDeclarations().forEach(varDecl => {
-      const variableSymbol = this.extractVariableSymbol(varDecl);
-      if (variableSymbol) {
-        symbols.variables.push(variableSymbol);
-      }
-    });
+    }
 
     // Extract type aliases
-    sourceFile.getTypeAliases().forEach(typeAlias => {
-      const typeSymbol = this.extractTypeSymbol(typeAlias);
-      if (typeSymbol) {
-        symbols.types.push(typeSymbol);
+    const typeAliases = helpers.getTypeAliases(sourceFile);
+    for (const typeAlias of typeAliases) {
+      const symbol = this.extractTypeAliasSymbol(typeAlias, sourceFile, typeChecker);
+      if (symbol) {
+        symbols.types.push(symbol);
       }
-    });
+    }
 
     // Extract enums
-    sourceFile.getEnums().forEach(enumDecl => {
-      const enumSymbol = this.extractEnumSymbol(enumDecl);
-      if (enumSymbol) {
-        symbols.enums.push(enumSymbol);
+    const enums = helpers.getEnums(sourceFile);
+    for (const enumDecl of enums) {
+      const symbol = this.extractEnumSymbol(enumDecl, sourceFile, typeChecker);
+      if (symbol) {
+        symbols.enums.push(symbol);
       }
-    });
+    }
 
-    // Extract imports
-    sourceFile.getImportDeclarations().forEach(importDecl => {
-      const importSymbol = this.extractImportSymbol(importDecl);
-      if (importSymbol) {
-        symbols.imports.push(importSymbol);
-      }
-    });
-
-    // Extract exports
-    this.extractExports(sourceFile, symbols);
-
-    return symbols;
-  }
-
-  /**
-   * Extract symbols from a specific AST node
-   */
-  async extractFromNode(node: any): Promise<Symbol[]> {
-    const symbols: Symbol[] = [];
-
-    // Handle different node types
-    if (node.getKind) {
-      const kind = node.getKind();
-
-      switch (kind) {
-        case SyntaxKind.ClassDeclaration:
-          const classSymbol = this.extractClassSymbol(node as ClassDeclaration);
-          if (classSymbol) symbols.push(classSymbol);
-          break;
-
-        case SyntaxKind.FunctionDeclaration:
-          const funcSymbol = this.extractFunctionSymbol(node as FunctionDeclaration);
-          if (funcSymbol) symbols.push(funcSymbol);
-          break;
-
-        case SyntaxKind.InterfaceDeclaration:
-          const ifaceSymbol = this.extractInterfaceSymbol(node as InterfaceDeclaration);
-          if (ifaceSymbol) symbols.push(ifaceSymbol);
-          break;
-
-        // Add more cases as needed
-      }
+    // Extract variables
+    const variables = helpers.getVariableStatements(sourceFile);
+    for (const varStmt of variables) {
+      const extractedVars = this.extractVariableSymbols(varStmt, sourceFile, typeChecker);
+      symbols.variables.push(...extractedVars);
     }
 
     return symbols;
@@ -151,360 +97,205 @@ export class TSSymbolExtractor {
   /**
    * Extract class symbol
    */
-  private extractClassSymbol(cls: ClassDeclaration): ClassSymbol | null {
-    const name = cls.getName();
-    if (!name) return null;
+  private extractClassSymbol(
+    node: ts.ClassDeclaration,
+    sourceFile: ts.SourceFile,
+    typeChecker: ts.TypeChecker
+  ): Symbol | null {
+    if (!node.name) {
+      return null;
+    }
 
-    const members: Symbol[] = [];
+    const name = node.name.getText(sourceFile);
+    const tsSymbol = typeChecker.getSymbolAtLocation(node.name);
 
-    // Extract class members
-    cls.getMembers().forEach(member => {
-      const memberSymbol = this.extractClassMemberSymbol(member);
-      if (memberSymbol) {
-        members.push(memberSymbol);
-      }
-    });
+    if (!tsSymbol) {
+      return null;
+    }
+
+    const type = typeChecker.getTypeAtLocation(node);
 
     return {
-      id: this.generateSymbolId('class'),
+      id: `symbol-${name}-${Date.now()}`,
       name,
       kind: SymbolKind.CLASS,
-      nodeId: `class-${name}`,
-      visibility: this.getVisibility(cls),
-      isExported: cls.isExported(),
-      isAbstract: cls.isAbstract(),
-      extends: cls.getExtends()?.getText(),
-      implements: cls.getImplements().map(i => i.getText()),
-      members,
-      type: cls.getType().getText()
+      nodeId: `node-${name}`,
+      isExported: helpers.isExported(node),
+      type: typeChecker.typeToString(type),
     };
   }
 
   /**
    * Extract interface symbol
    */
-  private extractInterfaceSymbol(iface: InterfaceDeclaration): InterfaceSymbol | null {
-    const name = iface.getName();
+  private extractInterfaceSymbol(
+    node: ts.InterfaceDeclaration,
+    sourceFile: ts.SourceFile,
+    typeChecker: ts.TypeChecker
+  ): Symbol | null {
+    const name = node.name.getText(sourceFile);
+    const tsSymbol = typeChecker.getSymbolAtLocation(node.name);
 
-    const members: Symbol[] = [];
+    if (!tsSymbol) {
+      return null;
+    }
 
-    // Extract interface members
-    iface.getMembers().forEach(member => {
-      const memberSymbol = this.extractInterfaceMemberSymbol(member);
-      if (memberSymbol) {
-        members.push(memberSymbol);
-      }
-    });
+    const type = typeChecker.getTypeAtLocation(node);
 
     return {
-      id: this.generateSymbolId('interface'),
+      id: `symbol-${name}-${Date.now()}`,
       name,
       kind: SymbolKind.INTERFACE,
-      nodeId: `interface-${name}`,
-      visibility: this.getVisibility(iface),
-      isExported: iface.isExported(),
-      extends: iface.getExtends().map(e => e.getText()),
-      members,
-      type: iface.getType().getText()
+      nodeId: `node-${name}`,
+      isExported: helpers.isExported(node),
+      type: typeChecker.typeToString(type),
     };
   }
 
   /**
    * Extract function symbol
    */
-  private extractFunctionSymbol(func: FunctionDeclaration): FunctionSymbol | null {
-    const name = func.getName();
-    if (!name) return null;
+  private extractFunctionSymbol(
+    node: ts.FunctionDeclaration,
+    sourceFile: ts.SourceFile,
+    typeChecker: ts.TypeChecker
+  ): Symbol | null {
+    if (!node.name) {
+      return null;
+    }
 
-    const parameters = this.extractParameters(func);
+    const name = node.name.getText(sourceFile);
+    const tsSymbol = typeChecker.getSymbolAtLocation(node.name);
+
+    if (!tsSymbol) {
+      return null;
+    }
+
+    const signature = typeChecker.getSignatureFromDeclaration(node);
+    const type = signature
+      ? typeChecker.getReturnTypeOfSignature(signature)
+      : typeChecker.getTypeAtLocation(node);
 
     return {
-      id: this.generateSymbolId('function'),
+      id: `symbol-${name}-${Date.now()}`,
       name,
       kind: SymbolKind.FUNCTION,
-      nodeId: `function-${name}`,
-      visibility: this.getVisibility(func),
-      isExported: func.isExported(),
-      isAsync: func.isAsync(),
-      isGenerator: func.isGenerator(),
-      parameters,
-      returnType: func.getReturnType().getText(),
-      type: func.getType().getText()
-    };
-  }
-
-  /**
-   * Extract variable symbol
-   */
-  private extractVariableSymbol(varDecl: VariableDeclaration): VariableSymbol | null {
-    const name = varDecl.getName();
-
-    const statement = varDecl.getVariableStatement();
-    const declarationKind = statement?.getDeclarationKind();
-    const isConst = declarationKind === VariableDeclarationKind.Const;
-    const isLet = declarationKind === VariableDeclarationKind.Let;
-
-    return {
-      id: this.generateSymbolId('variable'),
-      name,
-      kind: isConst ? SymbolKind.CONSTANT : SymbolKind.VARIABLE,
-      nodeId: `variable-${name}`,
-      visibility: statement ? this.getVisibility(statement) : 'public',
-      isExported: statement?.isExported() || false,
-      isConst,
-      isLet,
-      initializer: varDecl.getInitializer()?.getText(),
-      type: varDecl.getType().getText()
+      nodeId: `node-${name}`,
+      isExported: helpers.isExported(node),
+      type: typeChecker.typeToString(type),
     };
   }
 
   /**
    * Extract type alias symbol
    */
-  private extractTypeSymbol(typeAlias: TypeAliasDeclaration): TypeSymbol | null {
-    const name = typeAlias.getName();
+  private extractTypeAliasSymbol(
+    node: ts.TypeAliasDeclaration,
+    sourceFile: ts.SourceFile,
+    typeChecker: ts.TypeChecker
+  ): Symbol | null {
+    const name = node.name.getText(sourceFile);
+    const tsSymbol = typeChecker.getSymbolAtLocation(node.name);
+
+    if (!tsSymbol) {
+      return null;
+    }
+
+    const type = typeChecker.getTypeAtLocation(node);
 
     return {
-      id: this.generateSymbolId('type'),
+      id: `symbol-${name}-${Date.now()}`,
       name,
       kind: SymbolKind.TYPE,
-      nodeId: `type-${name}`,
-      visibility: this.getVisibility(typeAlias),
-      isExported: typeAlias.isExported(),
-      aliasedType: typeAlias.getTypeNode()?.getText(),
-      type: typeAlias.getType().getText()
+      nodeId: `node-${name}`,
+      isExported: helpers.isExported(node),
+      type: typeChecker.typeToString(type),
     };
   }
 
   /**
    * Extract enum symbol
    */
-  private extractEnumSymbol(enumDecl: EnumDeclaration): EnumSymbol | null {
-    const name = enumDecl.getName();
+  private extractEnumSymbol(
+    node: ts.EnumDeclaration,
+    sourceFile: ts.SourceFile,
+    typeChecker: ts.TypeChecker
+  ): Symbol | null {
+    const name = node.name.getText(sourceFile);
+    const tsSymbol = typeChecker.getSymbolAtLocation(node.name);
 
-    const members = enumDecl.getMembers().map(member => ({
-      name: member.getName(),
-      value: member.getValue()
-    }));
+    if (!tsSymbol) {
+      return null;
+    }
+
+    const type = typeChecker.getTypeAtLocation(node);
 
     return {
-      id: this.generateSymbolId('enum'),
+      id: `symbol-${name}-${Date.now()}`,
       name,
       kind: SymbolKind.ENUM,
-      nodeId: `enum-${name}`,
-      visibility: this.getVisibility(enumDecl),
-      isExported: enumDecl.isExported(),
-      members,
-      type: enumDecl.getType().getText()
+      nodeId: `node-${name}`,
+      isExported: helpers.isExported(node),
+      type: typeChecker.typeToString(type),
     };
   }
 
   /**
-   * Extract import symbol
+   * Extract variable symbols
    */
-  private extractImportSymbol(importDecl: ImportDeclaration): ImportSymbol {
-    const moduleSpecifier = importDecl.getModuleSpecifierValue();
+  private extractVariableSymbols(
+    node: ts.VariableStatement,
+    sourceFile: ts.SourceFile,
+    typeChecker: ts.TypeChecker
+  ): Symbol[] {
+    const symbols: Symbol[] = [];
 
-    const specifiers = [
-      // Named imports
-      ...importDecl.getNamedImports().map(named => ({
-        imported: named.getName(),
-        local: named.getAliasNode()?.getText()
-      })),
-      // Default import
-      ...(importDecl.getDefaultImport() ? [{
-        imported: 'default',
-        local: importDecl.getDefaultImport()!.getText(),
-        isDefault: true
-      }] : []),
-      // Namespace import
-      ...(importDecl.getNamespaceImport() ? [{
-        imported: '*',
-        local: importDecl.getNamespaceImport()!.getText(),
-        isNamespace: true
-      }] : [])
-    ];
+    for (const declaration of node.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name)) {
+        // Skip destructuring patterns for now
+        continue;
+      }
 
-    return {
-      source: moduleSpecifier,
-      specifiers,
-      isTypeOnly: importDecl.isTypeOnly()
-    };
-  }
+      const name = declaration.name.getText(sourceFile);
+      const tsSymbol = typeChecker.getSymbolAtLocation(declaration.name);
 
-  /**
-   * Extract exports from source file
-   */
-  private extractExports(sourceFile: SourceFile, symbols: ExtractedSymbols): void {
-    // Named exports
-    sourceFile.getExportDeclarations().forEach(exportDecl => {
-      exportDecl.getNamedExports().forEach(namedExport => {
-        symbols.exports.push({
-          name: namedExport.getName(),
-          localName: namedExport.getAliasNode()?.getText(),
-          isTypeOnly: exportDecl.isTypeOnly(),
-          source: exportDecl.getModuleSpecifier()?.getText()
-        });
+      if (!tsSymbol) {
+        continue;
+      }
+
+      const type = typeChecker.getTypeAtLocation(declaration);
+
+      symbols.push({
+        id: `symbol-${name}-${Date.now()}`,
+        name,
+        kind: SymbolKind.VARIABLE,
+        nodeId: `node-${name}`,
+        isExported: helpers.isExported(node),
+        type: typeChecker.typeToString(type),
       });
-    });
-
-    // Default exports
-    sourceFile.getExportAssignments().forEach(exportAssignment => {
-      if (exportAssignment.isExportEquals()) {
-        symbols.exports.push({
-          name: 'default',
-          isDefault: true
-        });
-      }
-    });
-
-    // Exported declarations
-    sourceFile.forEachChild(node => {
-      if ('isExported' in node && (node as any).isExported()) {
-        const name = 'getName' in node ? (node as any).getName() : undefined;
-        if (name && !symbols.exports.find(e => e.name === name)) {
-          symbols.exports.push({
-            name,
-            isDefault: 'isDefaultExport' in node && (node as any).isDefaultExport()
-          });
-        }
-      }
-    });
-  }
-
-  /**
-   * Extract class member symbol
-   */
-  private extractClassMemberSymbol(member: TSNode): Symbol | null {
-    const kind = member.getKind();
-
-    switch (kind) {
-      case SyntaxKind.Constructor:
-        return {
-          id: this.generateSymbolId('constructor'),
-          name: 'constructor',
-          kind: SymbolKind.CONSTRUCTOR,
-          nodeId: 'constructor',
-          visibility: this.getVisibility(member)
-        };
-
-      case SyntaxKind.MethodDeclaration:
-        const method = member as MethodDeclaration;
-        return {
-          id: this.generateSymbolId('method'),
-          name: method.getName(),
-          kind: SymbolKind.METHOD,
-          nodeId: `method-${method.getName()}`,
-          visibility: this.getVisibility(method),
-          type: method.getReturnType().getText()
-        };
-
-      case SyntaxKind.PropertyDeclaration:
-        const property = member as PropertyDeclaration;
-        return {
-          id: this.generateSymbolId('property'),
-          name: property.getName(),
-          kind: SymbolKind.PROPERTY,
-          nodeId: `property-${property.getName()}`,
-          visibility: this.getVisibility(property),
-          type: property.getType().getText()
-        };
-
-      case SyntaxKind.GetAccessor:
-        return {
-          id: this.generateSymbolId('getter'),
-          name: member.getSymbol()?.getName() || 'getter',
-          kind: SymbolKind.GETTER,
-          nodeId: 'getter',
-          visibility: this.getVisibility(member)
-        };
-
-      case SyntaxKind.SetAccessor:
-        return {
-          id: this.generateSymbolId('setter'),
-          name: member.getSymbol()?.getName() || 'setter',
-          kind: SymbolKind.SETTER,
-          nodeId: 'setter',
-          visibility: this.getVisibility(member)
-        };
-
-      default:
-        return null;
-    }
-  }
-
-  /**
-   * Extract interface member symbol
-   */
-  private extractInterfaceMemberSymbol(member: TSNode): Symbol | null {
-    const name = member.getSymbol()?.getName();
-    if (!name) return null;
-
-    const kind = member.getKind();
-
-    if (kind === SyntaxKind.PropertySignature) {
-      return {
-        id: this.generateSymbolId('property'),
-        name,
-        kind: SymbolKind.PROPERTY,
-        nodeId: `property-${name}`,
-        type: member.getType().getText()
-      };
-    } else if (kind === SyntaxKind.MethodSignature) {
-      return {
-        id: this.generateSymbolId('method'),
-        name,
-        kind: SymbolKind.METHOD,
-        nodeId: `method-${name}`,
-        type: member.getType().getText()
-      };
     }
 
-    return null;
+    return symbols;
   }
 
   /**
-   * Extract function/method parameters
+   * Get start and end positions for a node
    */
-  private extractParameters(func: FunctionDeclaration | MethodDeclaration): ParameterSymbol[] {
-    return func.getParameters().map(param => ({
-      name: param.getName(),
-      type: param.getType().getText(),
-      isOptional: param.isOptional(),
-      isRest: param.isRestParameter(),
-      defaultValue: param.getInitializer()?.getText()
-    }));
-  }
+  private getPosition(
+    node: ts.Node,
+    sourceFile: ts.SourceFile
+  ): [number, number, number, number] {
+    const start = node.getStart(sourceFile);
+    const end = node.getEnd();
 
-  /**
-   * Get visibility modifier
-   */
-  private getVisibility(node: TSNode): 'public' | 'private' | 'protected' {
-    if ('getScope' in node) {
-      const scope = (node as any).getScope();
-      if (scope === 'private') return 'private';
-      if (scope === 'protected') return 'protected';
-    }
+    const startPos = sourceFile.getLineAndCharacterOfPosition(start);
+    const endPos = sourceFile.getLineAndCharacterOfPosition(end);
 
-    // Check modifiers
-    if ('getModifiers' in node) {
-      const modifiers = (node as any).getModifiers();
-      if (modifiers) {
-        for (const mod of modifiers) {
-          const text = mod.getText();
-          if (text === 'private') return 'private';
-          if (text === 'protected') return 'protected';
-        }
-      }
-    }
-
-    return 'public';
-  }
-
-  /**
-   * Generate unique symbol ID
-   */
-  private generateSymbolId(prefix: string): string {
-    return `symbol-${prefix}-${this.symbolIdCounter++}`;
+    return [
+      startPos.line + 1,
+      startPos.character,
+      endPos.line + 1,
+      endPos.character
+    ];
   }
 }
