@@ -124,7 +124,8 @@ async function main() {
 
   // Clean up
   await cache.clear();
-  console.log('\nCache cleared.');
+  parser.dispose();
+  console.log('\nCache cleared and parser disposed.');
 }
 
 main().catch(console.error);

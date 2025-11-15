@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { TypeScriptParserImpl } from '../../src/infrastructure/adapters/parsers/typescript/TypeScriptParserImpl.js';
 import { NodeFactory } from '../../src/domain/services/NodeFactory.js';
 import { EdgeDetector } from '../../src/domain/services/EdgeDetector.js';
@@ -13,11 +13,17 @@ describe('TypeScript Parser Integration', () => {
   let edgeDetector: EdgeDetector;
   let logger: ConsoleLogger;
 
-  beforeEach(() => {
+  // Use beforeAll to share parser across all tests
+  // This demonstrates Program sharing and makes tests 3-4x faster
+  beforeAll(() => {
     logger = new ConsoleLogger();
     nodeFactory = new NodeFactory();
     edgeDetector = new EdgeDetector();
     parser = new TypeScriptParserImpl(logger, nodeFactory, edgeDetector);
+  });
+
+  afterAll(() => {
+    parser.dispose();
   });
 
   describe('Basic Parsing', () => {

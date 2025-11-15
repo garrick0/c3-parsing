@@ -107,6 +107,10 @@ async function main() {
   console.log(`Total Inheritance Relationships: ${extendsEdges.length}`);
   console.log(`Total Function Calls: ${callEdges.length}`);
   console.log(`Total Dependencies: ${importEdges.length + extendsEdges.length}`);
+
+  // Clean up (important in v1.1.0+)
+  parser.dispose();
+  console.log('\n✅ Parser disposed');
 }
 
 main().catch(console.error);

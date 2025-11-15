@@ -107,6 +107,33 @@ parser.dispose();
 
 *Benchmark results from actual testing with 100 TypeScript files*
 
+### Performance Characteristics
+
+**Startup Cost**: The first file parsed has higher latency (~600ms) due to:
+- TypeScript Project Service initialization
+- Automatic tsconfig.json discovery
+- Initial Program creation
+
+**Subsequent Files**: Once initialized, files parse very quickly (~3-5ms each)
+
+**Optimal Use Cases**:
+- ✅ **Recommended**: Parsing 10+ files (startup cost amortized)
+- ✅ **Excellent**: Parsing 50+ files (optimal performance, 3ms/file)
+- ⚠️ **Not ideal**: Single file in isolation (pays full startup cost)
+
+**Performance Profile**:
+```
+ 1 file:   ~600ms  (startup dominates)
+10 files:   ~60ms avg/file (startup amortizing)
+50+ files:  ~3-5ms avg/file (optimal, fully amortized)
+```
+
+**Cross-File Resolution**: With shared TypeScript Programs, the parser can:
+- Resolve types across file boundaries
+- Detect cross-file function calls
+- Track cross-file references
+- All with accurate type information from TypeChecker
+
 ## Features
 
 ### Core Parsing

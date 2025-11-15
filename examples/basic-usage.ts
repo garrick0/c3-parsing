@@ -90,6 +90,10 @@ async function main() {
   console.log(`  Transform Time: ${result.metadata.transformTime?.toFixed(2)}ms`);
   console.log(`  Convert Time: ${result.metadata.convertTime?.toFixed(2)}ms`);
   console.log(`  Total Time: ${result.metadata.totalTime?.toFixed(2)}ms`);
+
+  // Clean up (important in v1.1.0+)
+  parser.dispose();
+  console.log('\n✅ Parser disposed');
 }
 
 main().catch(console.error);
