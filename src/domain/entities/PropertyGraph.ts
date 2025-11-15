@@ -2,7 +2,7 @@
  * PropertyGraph - Core representation of codebase as nodes and edges
  */
 
-import { Entity } from 'c3-shared';
+import { Entity } from '../../infrastructure/mocks/c3-shared.js';
 import { Node } from './Node.js';
 import { Edge } from './Edge.js';
 
