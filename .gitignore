@@ -14,3 +14,6 @@ coverage/
 # Editor directories
 .vscode/
 .idea/
+
+# Working/temporary documentation
+.working/

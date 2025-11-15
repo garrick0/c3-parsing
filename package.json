@@ -3,16 +3,19 @@
   "version": "1.0.0",
   "description": "TypeScript/JavaScript code parsing and property graph construction for C3 platform",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./typescript": {
       "types": "./dist/infrastructure/adapters/parsers/typescript/index.d.ts",
-      "import": "./dist/infrastructure/adapters/parsers/typescript/index.js"
+      "import": "./dist/infrastructure/adapters/parsers/typescript/index.js",
+      "require": "./dist/infrastructure/adapters/parsers/typescript/index.cjs"
     }
   },
   "files": [
@@ -21,8 +24,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
@@ -63,6 +66,7 @@
     "@types/node": "^20.10.0",
     "@vitest/coverage-v8": "^1.0.4",
     "@vitest/ui": "^1.0.4",
+    "tsup": "^8.5.1",
     "typescript": "^5.3.3",
     "vitest": "^1.0.4"
   },
