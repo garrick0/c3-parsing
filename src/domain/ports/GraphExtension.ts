@@ -9,7 +9,7 @@
 
 import type { Node } from '../entities/Node.js';
 import type { Edge } from '../entities/Edge.js';
-import type { Logger } from 'c3-shared';
+import type { Logger } from '@garrick0/c3-shared';
 
 /**
  * Node type definition - describes a type of node this extension creates

@@ -14,7 +14,7 @@ import * as ts from 'typescript';
 import { ESTreeAST, ImportInfo, ExportInfo, Diagnostic } from '../../../domain/entities/ast/ESTreeAST.js';
 import { FileInfo } from '../../../domain/entities/FileInfo.js';
 import { Language } from '../../../domain/value-objects/Language.js';
-import { Logger } from 'c3-shared';
+import { Logger } from '@garrick0/c3-shared';
 
 export interface ESTreeTransformerOptions {
   includeComments?: boolean;
