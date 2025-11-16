@@ -9,7 +9,7 @@ import { TypeScriptExtension } from '../../src/infrastructure/extensions/typescr
 import { ExtensionContext } from '../../src/domain/ports/GraphExtension.js';
 import { NodeType } from '../../src/domain/value-objects/NodeType.js';
 import { EdgeType } from '../../src/domain/value-objects/EdgeType.js';
-import { createLogger } from 'c3-shared';
+import { createLogger } from '@garrick0/c3-shared';
 import { join } from 'path';
 
 describe('TypeScriptExtension', () => {

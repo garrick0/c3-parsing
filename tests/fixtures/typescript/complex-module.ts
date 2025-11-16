@@ -2,7 +2,7 @@
  * Complex module with various TypeScript features for comprehensive testing
  */
 
-import { Entity } from 'c3-shared';
+import { Entity } from '@garrick0/c3-shared';
 import * as path from 'path';
 import type { Logger } from './types';
 
