@@ -76,7 +76,7 @@
     "@typescript-eslint/types": "^8.46.4",
     "@typescript-eslint/typescript-estree": "^8.46.4",
     "@typescript-eslint/visitor-keys": "^8.46.4",
-    "@garrick0/c3-shared": "^0.1.0-dev.0",
+    "@garrick0/c3-shared": "dev",
     "glob": "^11.0.3",
     "lru-cache": "^11.2.2",
     "minimatch": "^10.1.1"

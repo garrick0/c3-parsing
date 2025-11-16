@@ -95,13 +95,13 @@ jobs:
         run: |
           echo "## 📦 Package Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Package:** @garrick0/c3-shared" >> $GITHUB_STEP_SUMMARY
+          echo "**Package:** @garrick0/c3-parsing" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Tag:** dev" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Install with:" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
-          echo "npm install @garrick0/c3-shared@dev" >> $GITHUB_STEP_SUMMARY
+          echo "npm install @garrick0/c3-parsing@dev" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
   publish-release:
@@ -179,16 +179,16 @@ jobs:
         run: |
           echo "## 🚀 Release Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Package:** @garrick0/c3-shared" >> $GITHUB_STEP_SUMMARY
+          echo "**Package:** @garrick0/c3-parsing" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Type:** ${{ inputs.release_type }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Install with:" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
           if [ "${{ inputs.release_type }}" = "canary" ] || [ "${{ inputs.release_type }}" = "dev" ]; then
-            echo "npm install @garrick0/c3-shared@${{ inputs.release_type }}" >> $GITHUB_STEP_SUMMARY
+            echo "npm install @garrick0/c3-parsing@${{ inputs.release_type }}" >> $GITHUB_STEP_SUMMARY
           else
-            echo "npm install @garrick0/c3-shared@latest" >> $GITHUB_STEP_SUMMARY
+            echo "npm install @garrick0/c3-parsing@latest" >> $GITHUB_STEP_SUMMARY
           fi
           echo '```' >> $GITHUB_STEP_SUMMARY
 
