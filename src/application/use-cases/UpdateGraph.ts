@@ -1,5 +1,9 @@
 /**
- * UpdateGraph - Use case for incremental graph updates
+ * UpdateGraph - Use case for incremental graph updates (v2.0.0)
+ * 
+ * Note: v2.0.0 re-parses the entire codebase for updates.
+ * Extensions handle their own incremental parsing internally
+ * (e.g., TypeScript Project Service caches Programs).
  */
 
 import { ParsingService } from '../../domain/services/ParsingService.js';
@@ -11,11 +15,21 @@ export class UpdateGraphUseCase {
     private logger: Logger
   ) {}
 
-  async execute(graphId: string, changedFiles: string[]): Promise<void> {
-    this.logger.info('Executing UpdateGraph use case', { graphId, fileCount: changedFiles.length });
+  async execute(graphId: string, rootPath: string): Promise<void> {
+    this.logger.info('Executing UpdateGraph use case (v2.0.0)', { 
+      graphId, 
+      rootPath 
+    });
 
-    for (const file of changedFiles) {
-      await this.parsingService.parseFile(file);
+    try {
+      // In v2.0.0, we re-parse the codebase
+      // Extensions internally cache (e.g., Project Service caches Programs)
+      await this.parsingService.parseCodebase(rootPath);
+      
+      this.logger.info('Graph updated successfully');
+    } catch (error) {
+      this.logger.error('Failed to update graph', error as Error);
+      throw error;
     }
   }
 }

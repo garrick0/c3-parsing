@@ -60,9 +60,9 @@ export * from './domain/ports/ASTTransformer.js';
 export * from './domain/ports/SymbolExtractor.js';
 export * from './domain/ports/GraphExtension.js';
 
-// Infrastructure - Parsers
-export * from './infrastructure/adapters/parsers/typescript/index.js';
-export * from './infrastructure/adapters/parsers/base/ParserFactory.js';
+// Infrastructure - Extensions
+export * from './infrastructure/extensions/typescript/TypeScriptExtension.js';
+export * from './infrastructure/extensions/filesystem/FilesystemExtension.js';
 
 // Infrastructure - Caching
 export * from './infrastructure/adapters/cache/CacheManager.js';
@@ -75,6 +75,3 @@ export * from './infrastructure/adapters/shared/PerformanceMonitor.js';
 
 // Infrastructure - Persistence
 export * from './infrastructure/persistence/InMemoryGraphRepository.js';
-
-// Infrastructure - Extensions
-export * from './infrastructure/extensions/FilesystemExtension.js';

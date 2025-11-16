@@ -5,54 +5,49 @@
  */
 
 import {
-  TypeScriptParserImpl,
-  NodeFactory,
-  EdgeDetector,
+  TypeScriptExtension,
+  FilesystemExtension,
   ParsingService,
-  InMemoryGraphRepository,
-  FilesystemExtension
+  InMemoryGraphRepository
 } from '../dist/index.js';
 import { createLogger } from 'c3-shared';
 
 async function main() {
   const logger = createLogger('FilesystemExample');
   
-  // Create parsers
-  const nodeFactory = new NodeFactory();
-  const edgeDetector = new EdgeDetector();
-  const typescriptParser = new TypeScriptParserImpl(
-    logger,
-    nodeFactory,
-    edgeDetector,
-    {
-      tsconfigRootDir: process.cwd()
-    }
-  );
+  // Create extensions (all equal!)
+  const typescriptExtension = new TypeScriptExtension({
+    tsconfigRootDir: process.cwd(),
+    includePrivateMembers: false
+  });
   
-  // Create filesystem extension
   const filesystemExtension = new FilesystemExtension({
     includeHidden: false,
     maxDepth: 5,
     ignorePatterns: ['node_modules', '.git', 'dist', 'coverage']
   });
   
-  logger.info('Extension metadata', {
-    name: filesystemExtension.name,
-    version: filesystemExtension.version,
-    domain: filesystemExtension.domain,
-    nodeTypes: filesystemExtension.nodeTypes.map(t => t.type),
-    edgeTypes: filesystemExtension.edgeTypes.map(t => t.type)
+  logger.info('Extensions configured', {
+    typescript: {
+      name: typescriptExtension.name,
+      version: typescriptExtension.version,
+      domain: typescriptExtension.domain
+    },
+    filesystem: {
+      name: filesystemExtension.name,
+      version: filesystemExtension.version,
+      domain: filesystemExtension.domain,
+      nodeTypes: filesystemExtension.nodeTypes.map(t => t.type),
+      edgeTypes: filesystemExtension.edgeTypes.map(t => t.type)
+    }
   });
   
-  // Create parsing service with extension
+  // Create parsing service with extensions (v2.0 API)
   const repository = new InMemoryGraphRepository();
   const parsingService = new ParsingService(
-    [typescriptParser],
     repository,
-    {} as any, // FileSystem interface
     logger,
-    undefined,
-    [filesystemExtension] // Pass extension here
+    [typescriptExtension, filesystemExtension] // All extensions equal!
   );
   
   // Parse codebase with filesystem extension
@@ -130,7 +125,7 @@ async function main() {
   });
   
   // Clean up
-  typescriptParser.dispose();
+  await typescriptExtension.dispose();
   
   logger.info('Example complete!');
 }

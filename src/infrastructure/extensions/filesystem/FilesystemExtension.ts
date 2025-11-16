@@ -14,11 +14,11 @@ import type {
   ExtensionContext,
   LinkContext,
   ExtensionResult
-} from '../../domain/ports/GraphExtension.js';
-import { Node, type SourceMetadata } from '../../domain/entities/Node.js';
-import { Edge } from '../../domain/entities/Edge.js';
-import { NodeType } from '../../domain/value-objects/NodeType.js';
-import { EdgeType } from '../../domain/value-objects/EdgeType.js';
+} from '../../../domain/ports/GraphExtension.js';
+import { Node, type SourceMetadata } from '../../../domain/entities/Node.js';
+import { Edge } from '../../../domain/entities/Edge.js';
+import { NodeType } from '../../../domain/value-objects/NodeType.js';
+import { EdgeType } from '../../../domain/value-objects/EdgeType.js';
 
 export interface FilesystemExtensionConfig {
   includeHidden?: boolean;

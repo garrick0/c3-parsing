@@ -1,99 +1,78 @@
 /**
- * Basic Usage Example
+ * Basic Usage Example (v2.0.0)
  *
- * Demonstrates how to parse a single TypeScript file
+ * Demonstrates how to parse a TypeScript codebase using extensions
  */
 
 import {
-  TypeScriptParserImpl,
-  NodeFactory,
-  EdgeDetector,
-  FileInfo,
-  Language
+  TypeScriptExtension,
+  ParsingService,
+  InMemoryGraphRepository
 } from '../dist/index.js';
 import { createLogger } from 'c3-shared';
 
 async function main() {
-  // Create dependencies
   const logger = createLogger('BasicUsage');
-  const nodeFactory = new NodeFactory();
-  const edgeDetector = new EdgeDetector();
 
-  // Create parser
-  const parser = new TypeScriptParserImpl(
+  // Create TypeScript extension
+  const tsExtension = new TypeScriptExtension({
+    tsconfigRootDir: process.cwd(),
+    includePrivateMembers: false
+  });
+
+  // Create parsing service with extension
+  const repository = new InMemoryGraphRepository();
+  const service = new ParsingService(
+    repository,
     logger,
-    nodeFactory,
-    edgeDetector
+    [tsExtension] // All data sources are extensions!
   );
 
-  // Sample TypeScript code to parse
-  const source = `
-    export interface User {
-      id: string;
-      name: string;
-      email: string;
-    }
-
-    export class UserService {
-      private users: Map<string, User> = new Map();
-
-      constructor() {}
-
-      addUser(user: User): void {
-        this.users.set(user.id, user);
-      }
-
-      getUser(id: string): User | undefined {
-        return this.users.get(id);
-      }
-
-      getAllUsers(): User[] {
-        return Array.from(this.users.values());
-      }
-    }
-  `;
-
-  // Create file info
-  const fileInfo = new FileInfo(
-    'example-1',
-    'UserService.ts',
-    '.ts',
-    source.length,
-    Language.TYPESCRIPT,
-    new Date()
-  );
-
-  // Parse the code
+  // Parse the src directory
   console.log('Parsing TypeScript code...\n');
-  const result = await parser.parse(source, fileInfo);
+  const graph = await service.parseCodebase('./src');
 
   // Display results
   console.log('=== Parse Results ===\n');
-  console.log(`Total Nodes: ${result.nodes.length}`);
-  console.log(`Total Edges: ${result.edges.length}\n`);
+  console.log(`Total Nodes: ${graph.getNodeCount()}`);
+  console.log(`Total Edges: ${graph.getEdgeCount()}\n`);
 
-  // Show nodes
-  console.log('Nodes:');
-  result.nodes.forEach(node => {
-    console.log(`  - ${node.type}: ${node.name}`);
+  // Query by domain
+  const codeNodes = graph.getNodesByDomain('code');
+  console.log(`Code Nodes: ${codeNodes.length}`);
+
+  // Query by labels
+  const classes = graph.getNodesByLabel('Class');
+  const functions = graph.getNodesByLabel('Function');
+  const interfaces = graph.getNodesByLabel('Interface');
+
+  console.log(`\nBy Type:`);
+  console.log(`  Classes: ${classes.length}`);
+  console.log(`  Functions: ${functions.length}`);
+  console.log(`  Interfaces: ${interfaces.length}`);
+
+  // Show sample nodes
+  console.log('\nSample Nodes:');
+  graph.getNodes().slice(0, 10).forEach(node => {
+    const labels = node.getLabels().join(', ');
+    console.log(`  - ${node.type}: ${node.name} [${labels}]`);
   });
 
-  console.log('\nEdges:');
-  result.edges.slice(0, 10).forEach(edge => {
+  // Show sample edges
+  console.log('\nSample Edges:');
+  graph.getEdges().slice(0, 10).forEach(edge => {
     console.log(`  - ${edge.type}: ${edge.fromNodeId} → ${edge.toNodeId}`);
   });
 
-  // Show metadata
-  console.log('\nMetadata:');
-  console.log(`  Language: ${result.metadata.language}`);
-  console.log(`  Parse Time: ${result.metadata.parseTime?.toFixed(2)}ms`);
-  console.log(`  Transform Time: ${result.metadata.transformTime?.toFixed(2)}ms`);
-  console.log(`  Convert Time: ${result.metadata.convertTime?.toFixed(2)}ms`);
-  console.log(`  Total Time: ${result.metadata.totalTime?.toFixed(2)}ms`);
+  // Show domains
+  console.log('\nDomains in graph:');
+  graph.getAllDomains().forEach(domain => {
+    console.log(`  - ${domain}`);
+  });
 
-  // Clean up (important in v1.1.0+)
-  parser.dispose();
-  console.log('\n✅ Parser disposed');
+  // Clean up
+  await tsExtension.dispose();
+  console.log('\n✅ Extension disposed');
 }
 
 main().catch(console.error);

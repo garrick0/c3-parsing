@@ -11,9 +11,9 @@
 import { parseAndGenerateServices } from '@typescript-eslint/typescript-estree';
 import type { TSESTree, ParserServices } from '@typescript-eslint/typescript-estree';
 import * as ts from 'typescript';
-import { ESTreeAST, ImportInfo, ExportInfo, Diagnostic } from '../../../../domain/entities/ast/ESTreeAST.js';
-import { FileInfo } from '../../../../domain/entities/FileInfo.js';
-import { Language } from '../../../../domain/value-objects/Language.js';
+import { ESTreeAST, ImportInfo, ExportInfo, Diagnostic } from '../../../domain/entities/ast/ESTreeAST.js';
+import { FileInfo } from '../../../domain/entities/FileInfo.js';
+import { Language } from '../../../domain/value-objects/Language.js';
 import { Logger } from 'c3-shared';
 
 export interface ESTreeTransformerOptions {
