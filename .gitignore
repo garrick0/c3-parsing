@@ -3,3 +3,17 @@ dist/
 coverage/
 *.log
 .DS_Store
+
+# Cache directories
+.c3-cache/
+*.cache
+
+# Test artifacts
+*.tsbuildinfo
+
+# Editor directories
+.vscode/
+.idea/
+
+# Working/temporary documentation
+.working/

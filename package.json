@@ -1,18 +1,84 @@
 {
   "name": "c3-parsing",
-  "version": "0.1.0",
-  "description": "Code parsing and property graph construction for C3",
+  "version": "1.1.0",
+  "description": "TypeScript/JavaScript code parsing and property graph construction for C3 platform - Now with Project Service for 24x faster parsing!",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./typescript": {
+      "types": "./dist/infrastructure/adapters/parsers/typescript/index.d.ts",
+      "import": "./dist/infrastructure/adapters/parsers/typescript/index.js",
+      "require": "./dist/infrastructure/adapters/parsers/typescript/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "vitest run"
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "test:integration": "vitest run tests/integration",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf dist coverage .c3-cache",
+    "prepublishOnly": "npm run clean && npm run build && npm run test",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "typescript",
+    "javascript",
+    "parser",
+    "ast",
+    "code-analysis",
+    "property-graph",
+    "static-analysis",
+    "c3",
+    "code-graph"
+  ],
+  "author": "C3 Platform",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/garrick0/c3-platform.git",
+    "directory": "packages/c3-parsing"
+  },
+  "bugs": {
+    "url": "https://github.com/garrick0/c3-platform/issues"
+  },
+  "homepage": "https://github.com/garrick0/c3-platform#readme",
+  "engines": {
+    "node": ">=18.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "@vitest/coverage-v8": "^1.0.4",
+    "@vitest/ui": "^1.0.4",
+    "tsup": "^8.5.1",
     "typescript": "^5.3.3",
     "vitest": "^1.0.4"
+  },
+  "dependencies": {
+    "@typescript-eslint/types": "^8.46.4",
+    "@typescript-eslint/typescript-estree": "^8.46.4",
+    "@typescript-eslint/visitor-keys": "^8.46.4",
+    "c3-shared": "^0.1.0",
+    "lru-cache": "^11.2.2",
+    "minimatch": "^10.1.1"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
   }
 }

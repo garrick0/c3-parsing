@@ -113,4 +113,66 @@ export class PropertyGraph extends Entity<string> {
       avgDegree: nodeCount > 0 ? edgeCount / nodeCount : 0
     };
   }
+
+  /**
+   * Get nodes by label
+   */
+  getNodesByLabel(label: string): Node[] {
+    return this.getNodes().filter(node => node.hasLabel(label));
+  }
+
+  /**
+   * Get nodes matching any of the given labels
+   */
+  getNodesByAnyLabel(labels: string[]): Node[] {
+    return this.getNodes().filter(node => node.hasAnyLabel(labels));
+  }
+
+  /**
+   * Get nodes matching all of the given labels
+   */
+  getNodesByAllLabels(labels: string[]): Node[] {
+    return this.getNodes().filter(node => node.hasAllLabels(labels));
+  }
+
+  /**
+   * Get nodes by source domain
+   */
+  getNodesByDomain(domain: string): Node[] {
+    return this.getNodes().filter(node => node.isFromDomain(domain));
+  }
+
+  /**
+   * Get edges by source domain
+   */
+  getEdgesByDomain(domain: string): Edge[] {
+    return this.edges.filter(edge => edge.isFromDomain(domain));
+  }
+
+  /**
+   * Get all unique labels in the graph
+   */
+  getAllLabels(): string[] {
+    const labels = new Set<string>();
+    for (const node of this.getNodes()) {
+      for (const label of node.getLabels()) {
+        labels.add(label);
+      }
+    }
+    return Array.from(labels);
+  }
+
+  /**
+   * Get all unique domains in the graph
+   */
+  getAllDomains(): string[] {
+    const domains = new Set<string>();
+    for (const node of this.getNodes()) {
+      const domain = node.getSourceDomain();
+      if (domain) {
+        domains.add(domain);
+      }
+    }
+    return Array.from(domains);
+  }
 }

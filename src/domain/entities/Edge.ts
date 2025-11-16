@@ -4,6 +4,7 @@
 
 import { Entity } from 'c3-shared';
 import { EdgeType } from '../value-objects/EdgeType.js';
+import type { SourceMetadata } from './Node.js';
 
 export interface EdgeMetadata {
   weight?: number;
@@ -16,7 +17,8 @@ export class Edge extends Entity<string> {
     public readonly type: EdgeType,
     public readonly fromNodeId: string,
     public readonly toNodeId: string,
-    public readonly metadata: EdgeMetadata = {}
+    public readonly metadata: EdgeMetadata = {},
+    public readonly source?: SourceMetadata    // Source tracking
   ) {
     super(id);
   }
@@ -61,5 +63,19 @@ export class Edge extends Entity<string> {
    */
   getDisplayLabel(): string {
     return this.type;
+  }
+
+  /**
+   * Check if edge was created by specific domain
+   */
+  isFromDomain(domain: string): boolean {
+    return this.source?.domain === domain;
+  }
+
+  /**
+   * Get source domain
+   */
+  getSourceDomain(): string | undefined {
+    return this.source?.domain;
   }
 }

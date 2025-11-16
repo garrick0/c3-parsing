@@ -9,10 +9,26 @@ vitest.config.ts
 
 # Development files
 .vscode/
+.idea/
 .github/
 node_modules/
 coverage/
 *.log
+*.tsbuildinfo
+
+# Internal docs and working files
+.working/
+.claude/
+
+# Test files
+tests/
+
+# Examples (not needed in package, users can find them in repo)
+examples/
+
+# Cache directories
+.c3-cache/
+*.cache
 
 # Git
 .git/

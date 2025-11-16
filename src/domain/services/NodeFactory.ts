@@ -2,7 +2,7 @@
  * NodeFactory - Creates graph nodes
  */
 
-import { Node, NodeMetadata } from '../entities/Node.js';
+import { Node, NodeMetadata, SourceMetadata } from '../entities/Node.js';
 import { NodeType } from '../value-objects/NodeType.js';
 
 export class NodeFactory {
@@ -11,8 +11,19 @@ export class NodeFactory {
   /**
    * Create a file node
    */
-  createFileNode(filePath: string, metadata: Partial<NodeMetadata> = {}): Node {
+  createFileNode(
+    filePath: string,
+    metadata: Partial<NodeMetadata> = {},
+    labels?: string[],
+    source?: SourceMetadata
+  ): Node {
     const fileName = filePath.split('/').pop() || filePath;
+    
+    // Default labels for file nodes
+    const defaultLabels = new Set(['FileSystemObject']);
+    const allLabels = labels 
+      ? new Set([...defaultLabels, ...labels])
+      : defaultLabels;
 
     return new Node(
       this.generateId('file'),
@@ -21,15 +32,28 @@ export class NodeFactory {
       {
         filePath,
         ...metadata
-      }
+      },
+      allLabels,
+      source
     );
   }
 
   /**
    * Create a directory node
    */
-  createDirectoryNode(dirPath: string, metadata: Partial<NodeMetadata> = {}): Node {
+  createDirectoryNode(
+    dirPath: string,
+    metadata: Partial<NodeMetadata> = {},
+    labels?: string[],
+    source?: SourceMetadata
+  ): Node {
     const dirName = dirPath.split('/').pop() || dirPath;
+    
+    // Default labels for directory nodes
+    const defaultLabels = new Set(['FileSystemObject']);
+    const allLabels = labels 
+      ? new Set([...defaultLabels, ...labels])
+      : defaultLabels;
 
     return new Node(
       this.generateId('dir'),
@@ -38,7 +62,9 @@ export class NodeFactory {
       {
         filePath: dirPath,
         ...metadata
-      }
+      },
+      allLabels,
+      source
     );
   }
 
@@ -48,8 +74,16 @@ export class NodeFactory {
   createClassNode(
     className: string,
     filePath: string,
-    metadata: Partial<NodeMetadata> = {}
+    metadata: Partial<NodeMetadata> = {},
+    labels?: string[],
+    source?: SourceMetadata
   ): Node {
+    // Default labels for class nodes
+    const defaultLabels = new Set(['CodeElement', 'Type']);
+    const allLabels = labels 
+      ? new Set([...defaultLabels, ...labels])
+      : defaultLabels;
+
     return new Node(
       this.generateId('class'),
       NodeType.CLASS,
@@ -57,7 +91,9 @@ export class NodeFactory {
       {
         filePath,
         ...metadata
-      }
+      },
+      allLabels,
+      source
     );
   }
 
@@ -67,8 +103,16 @@ export class NodeFactory {
   createFunctionNode(
     functionName: string,
     filePath: string,
-    metadata: Partial<NodeMetadata> = {}
+    metadata: Partial<NodeMetadata> = {},
+    labels?: string[],
+    source?: SourceMetadata
   ): Node {
+    // Default labels for function nodes
+    const defaultLabels = new Set(['CodeElement', 'Callable']);
+    const allLabels = labels 
+      ? new Set([...defaultLabels, ...labels])
+      : defaultLabels;
+
     return new Node(
       this.generateId('func'),
       NodeType.FUNCTION,
@@ -76,7 +120,9 @@ export class NodeFactory {
       {
         filePath,
         ...metadata
-      }
+      },
+      allLabels,
+      source
     );
   }
 
