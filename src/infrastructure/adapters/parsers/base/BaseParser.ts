@@ -1,5 +1,10 @@
 /**
  * BaseParser - Abstract base class for all language parsers
+ * 
+ * @deprecated Since v2.0.0 - Use GraphExtension interface instead
+ * 
+ * This class is kept for backward compatibility but will be removed in v3.0.0.
+ * Please migrate to the new extension-based architecture using GraphExtension.
  */
 
 import { Parser, ParseResult } from '../../../../domain/ports/Parser.js';

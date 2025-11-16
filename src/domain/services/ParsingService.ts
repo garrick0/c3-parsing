@@ -1,39 +1,38 @@
 /**
  * ParsingService - Main orchestration service for parsing codebases
+ * 
+ * Version 2.0.0: Simplified to work only with extensions
+ * All data sources (TypeScript, Filesystem, Git, etc.) are now extensions
  */
 
 import { PropertyGraph } from '../entities/PropertyGraph.js';
-import { Parser, ParseResult } from '../ports/Parser.js';
 import { GraphRepository } from '../ports/GraphRepository.js';
-import { FileSystem } from '../ports/FileSystem.js';
-import { Cache } from '../ports/Cache.js';
 import { Logger } from 'c3-shared';
 import { GraphBuilder } from './GraphBuilder.js';
-import { FileInfo } from '../entities/FileInfo.js';
-import { Language, detectLanguage } from '../value-objects/Language.js';
-import { createHash } from 'crypto';
 import type { GraphExtension, ExtensionContext, LinkContext } from '../ports/GraphExtension.js';
 import { GraphQueryImpl } from '../ports/GraphExtension.js';
 import type { Node } from '../entities/Node.js';
 
 export interface ParsingOptions {
-  maxConcurrency?: number;
-  excludePatterns?: string[];
-  includePatterns?: string[];
   onProgress?: (current: number, total: number) => void;
-  extensions?: GraphExtension[];  // NEW: Extensions to run
+  extensions?: GraphExtension[];  // Override constructor extensions
 }
 
+/**
+ * ParsingService - Orchestrates graph extensions
+ * 
+ * Version 2.0.0 Changes:
+ * - Removed Parser/FileSystem/Cache dependencies
+ * - Simplified to only work with extensions
+ * - All data sources are now extensions (TypeScript, Filesystem, etc.)
+ */
 export class ParsingService {
   constructor(
-    private parsers: Parser[],
     private graphRepository: GraphRepository,
-    private fileSystem: FileSystem,
     private logger: Logger,
-    private cache?: Cache,
-    private extensions: GraphExtension[] = []  // NEW: Accept extensions at construction
+    private extensions: GraphExtension[] = []
   ) {}
-
+  
   /**
    * Parse entire codebase into property graph
    */
@@ -43,207 +42,52 @@ export class ParsingService {
   ): Promise<PropertyGraph> {
     const startTime = performance.now();
     this.logger.info('Starting codebase parse', { rootPath });
-
+    
     try {
-      // Find all parseable files
-      const files = await this.findParseableFiles(rootPath, options);
-      this.logger.info(`Found ${files.length} files to parse`);
-
-      // Parse files with concurrency control
-      const results = await this.parseFilesWithConcurrency(
-        files,
-        options.maxConcurrency || 10,
-        options.onProgress
-      );
-
-      // Build graph from code parser results
-      const graph = this.buildGraphFromResults(results, rootPath);
-
-      // NEW: Run extensions (filesystem, git, etc.)
+      // Create empty graph
+      const graphBuilder = new GraphBuilder();
+      graphBuilder.start({
+        codebaseId: rootPath,
+        parsedAt: new Date(),
+        language: 'multi',  // Multi-source graph
+        version: '2.0.0'
+      });
+      
+      const graph = graphBuilder.build();
+      
+      // Run extensions (TypeScript, Filesystem, Git, etc.)
       const extensionsToRun = options.extensions || this.extensions;
-      if (extensionsToRun.length > 0) {
-        await this.runExtensions(extensionsToRun, rootPath, graph);
+      
+      if (extensionsToRun.length === 0) {
+        this.logger.warn('No extensions configured - graph will be empty');
       }
-
+      
+      await this.runExtensions(extensionsToRun, rootPath, graph);
+      
       // Save to repository
       await this.graphRepository.save(graph);
-
+      
       const duration = performance.now() - startTime;
       this.logger.info('Parsing complete', {
-        files: files.length,
         nodes: graph.getNodeCount(),
         edges: graph.getEdgeCount(),
-        extensions: extensionsToRun.map(e => e.name),
-        duration: `${duration.toFixed(2)}ms`,
-        cacheStats: this.cache?.getStats()
+        extensions: extensionsToRun.map(e => `${e.name}@${e.version}`),
+        duration: `${duration.toFixed(2)}ms`
       });
-
+      
       return graph;
     } catch (error) {
       this.logger.error('Failed to parse codebase', error as Error);
       throw error;
     }
   }
-
+  
   /**
-   * Parse single file
-   */
-  async parseFile(filePath: string): Promise<ParseResult> {
-    this.logger.debug('Parsing file', { filePath });
-
-    // Check cache first
-    if (this.cache) {
-      const content = await this.readFileContent(filePath);
-      const cacheKey = this.cache.generateKey(filePath, this.cache.hashContent(content));
-      const cached = await this.cache.get(cacheKey);
-
-      if (cached) {
-        this.logger.debug('Cache hit for file', { filePath });
-        return cached;
-      }
-    }
-
-    // Find appropriate parser
-    const fileInfo = await this.createFileInfo(filePath);
-    const parser = this.findParser(fileInfo);
-
-    if (!parser) {
-      throw new Error(`No parser found for file: ${filePath}`);
-    }
-
-    // Parse file
-    const content = await this.readFileContent(filePath);
-    const result = await parser.parse(content, fileInfo);
-
-    // Cache result
-    if (this.cache) {
-      const cacheKey = this.cache.generateKey(filePath, this.cache.hashContent(content));
-      await this.cache.set(cacheKey, result);
-    }
-
-    return result;
-  }
-
-  /**
-   * Find parser for file
-   */
-  private findParser(fileInfo: FileInfo): Parser | undefined {
-    for (const parser of this.parsers) {
-      if (parser.supports(fileInfo)) {
-        return parser;
-      }
-    }
-    return undefined;
-  }
-
-  /**
-   * Find all parseable files in a directory
-   */
-  private async findParseableFiles(
-    rootPath: string,
-    options: ParsingOptions
-  ): Promise<string[]> {
-    const allFiles: string[] = [];
-    const excludePatterns = options.excludePatterns || [
-      'node_modules',
-      'dist',
-      'coverage',
-      '.git',
-      '.cache'
-    ];
-
-    // Recursively find files
-    await this.walkDirectory(rootPath, allFiles, excludePatterns);
-
-    // Filter by include patterns if specified
-    if (options.includePatterns && options.includePatterns.length > 0) {
-      return allFiles.filter(file =>
-        options.includePatterns!.some(pattern => file.includes(pattern))
-      );
-    }
-
-    return allFiles;
-  }
-
-  /**
-   * Recursively walk directory
-   */
-  private async walkDirectory(
-    dir: string,
-    files: string[],
-    excludePatterns: string[]
-  ): Promise<void> {
-    // This would use the FileSystem port in a real implementation
-    // For now, we'll keep it simple
-    // TODO: Implement using fileSystem.readDirectory() when available
-  }
-
-  /**
-   * Parse multiple files with concurrency control
-   */
-  private async parseFilesWithConcurrency(
-    files: string[],
-    maxConcurrency: number,
-    onProgress?: (current: number, total: number) => void
-  ): Promise<ParseResult[]> {
-    const results: ParseResult[] = [];
-    let completed = 0;
-
-    // Process in batches
-    for (let i = 0; i < files.length; i += maxConcurrency) {
-      const batch = files.slice(i, i + maxConcurrency);
-
-      const batchResults = await Promise.allSettled(
-        batch.map(file => this.parseFile(file))
-      );
-
-      for (const result of batchResults) {
-        if (result.status === 'fulfilled') {
-          results.push(result.value);
-        } else {
-          this.logger.warn('Failed to parse file', result.reason);
-        }
-
-        completed++;
-        onProgress?.(completed, files.length);
-      }
-    }
-
-    return results;
-  }
-
-  /**
-   * Build property graph from parse results
-   */
-  private buildGraphFromResults(
-    results: ParseResult[],
-    rootPath: string
-  ): PropertyGraph {
-    const graphBuilder = new GraphBuilder();
-
-    graphBuilder.start({
-      codebaseId: rootPath,
-      parsedAt: new Date(),
-      language: 'typescript',
-      version: '1.0.0'
-    });
-
-    // Add all nodes and edges
-    for (const result of results) {
-      for (const node of result.nodes) {
-        graphBuilder.addNode(node);
-      }
-      for (const edge of result.edges) {
-        graphBuilder.addEdge(edge);
-      }
-    }
-
-    return graphBuilder.build();
-  }
-
-  /**
-   * Run extensions to add additional data to the graph
-   * NEW: Extension orchestration
+   * Run extensions to add data to the graph
+   * 
+   * Two-phase processing:
+   * 1. Parse phase - Each extension parses its data source
+   * 2. Link phase - Extensions create cross-domain edges
    */
   private async runExtensions(
     extensions: GraphExtension[],
@@ -253,7 +97,7 @@ export class ParsingService {
     this.logger.info(`Running ${extensions.length} extension(s)`, {
       extensions: extensions.map(e => `${e.name}@${e.version}`)
     });
-
+    
     // Phase 1: Parse - each extension parses its data source
     const extensionResults = new Map<GraphExtension, { nodes: Node[], edges: any[] }>();
     
@@ -263,20 +107,20 @@ export class ParsingService {
           domain: extension.domain,
           version: extension.version
         });
-
+        
         const context: ExtensionContext = {
           rootPath,
           logger: this.logger,
           config: {}
         };
-
+        
         const result = await extension.parse(context);
         
         this.logger.info(`Extension ${extension.name} complete`, {
           nodes: result.nodes.length,
           edges: result.edges.length
         });
-
+        
         // Add extension nodes and edges to graph
         for (const node of result.nodes) {
           graph.addNode(node);
@@ -284,15 +128,15 @@ export class ParsingService {
         for (const edge of result.edges) {
           graph.addEdge(edge);
         }
-
+        
         extensionResults.set(extension, result);
-
+        
       } catch (error) {
         this.logger.error(`Extension ${extension.name} failed`, error as Error);
         // Continue with other extensions
       }
     }
-
+    
     // Phase 2: Link - extensions can create edges to nodes from other extensions
     this.logger.info('Running extension linking phase');
     
@@ -301,7 +145,7 @@ export class ParsingService {
     for (const node of graph.getNodes()) {
       allNodesMap.set(node.id, node);
     }
-
+    
     for (const extension of extensions) {
       try {
         const context: LinkContext = {
@@ -309,7 +153,7 @@ export class ParsingService {
           query: new GraphQueryImpl(allNodesMap),
           logger: this.logger
         };
-
+        
         const linkEdges = await extension.link(context);
         
         if (linkEdges.length > 0) {
@@ -319,95 +163,20 @@ export class ParsingService {
             graph.addEdge(edge);
           }
         }
-
+        
       } catch (error) {
         this.logger.error(`Extension ${extension.name} linking failed`, error as Error);
         // Continue with other extensions
       }
     }
-
+    
     this.logger.info('Extension processing complete');
   }
-
+  
   /**
-   * Create FileInfo from file path
+   * Get list of configured extensions
    */
-  private async createFileInfo(filePath: string): Promise<FileInfo> {
-    const stats = await this.getFileStats(filePath);
-    const extension = this.getExtension(filePath);
-    const language = detectLanguage(extension);
-
-    return new FileInfo(
-      this.generateFileId(filePath),
-      filePath,
-      extension,
-      stats.size,
-      language,
-      stats.lastModified
-    );
-  }
-
-  /**
-   * Read file content
-   */
-  private async readFileContent(filePath: string): Promise<string> {
-    // Would use fileSystem.readFile() in production
-    const { readFile } = await import('fs/promises');
-    return readFile(filePath, 'utf-8');
-  }
-
-  /**
-   * Get file stats
-   */
-  private async getFileStats(filePath: string): Promise<{
-    size: number;
-    lastModified: Date;
-  }> {
-    const { stat } = await import('fs/promises');
-    const stats = await stat(filePath);
-    return {
-      size: stats.size,
-      lastModified: stats.mtime
-    };
-  }
-
-  /**
-   * Get file extension
-   */
-  private getExtension(filePath: string): string {
-    const parts = filePath.split('.');
-    return parts.length > 1 ? `.${parts[parts.length - 1]}` : '';
-  }
-
-  /**
-   * Generate unique file ID
-   */
-  private generateFileId(filePath: string): string {
-    const hash = createHash('md5').update(filePath).digest('hex');
-    return `file-${hash}`;
-  }
-
-  /**
-   * Get cached graph
-   */
-  async getCachedGraph(codebaseId: string): Promise<PropertyGraph | undefined> {
-    return this.graphRepository.findById(codebaseId);
-  }
-
-  /**
-   * Clear parse cache
-   */
-  async clearCache(): Promise<void> {
-    if (this.cache) {
-      await this.cache.clear();
-      this.logger.info('Parse cache cleared');
-    }
-  }
-
-  /**
-   * Get cache statistics
-   */
-  getCacheStats() {
-    return this.cache?.getStats();
+  getExtensions(): GraphExtension[] {
+    return this.extensions;
   }
 }

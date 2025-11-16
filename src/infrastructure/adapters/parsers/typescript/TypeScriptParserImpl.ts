@@ -1,6 +1,21 @@
 /**
  * TypeScriptParserImpl - TypeScript/JavaScript AST parser using native TypeScript API
  *
+ * @deprecated Since v2.0.0 - Use TypeScriptExtension instead
+ * 
+ * This class is kept for backward compatibility but will be removed in v3.0.0.
+ * Please migrate to the new extension-based architecture:
+ * 
+ * ```typescript
+ * // OLD (v1.x)
+ * const parser = new TypeScriptParserImpl(logger, nodeFactory, edgeDetector);
+ * 
+ * // NEW (v2.0.0+)
+ * import { TypeScriptExtension, ParsingService } from 'c3-parsing';
+ * const extension = new TypeScriptExtension({ tsconfigRootDir: process.cwd() });
+ * const service = new ParsingService(repository, logger, [extension]);
+ * ```
+ *
  * REFACTORED: Removed ts-morph dependency entirely
  * Pattern: Uses TypeScript's native API like typescript-eslint
  *

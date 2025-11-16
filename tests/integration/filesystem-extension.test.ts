@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { FilesystemExtension } from '../../src/infrastructure/extensions/FilesystemExtension.js';
+import { FilesystemExtension } from '../../src/infrastructure/extensions/filesystem/FilesystemExtension.js';
 import { ExtensionContext, GraphQueryImpl } from '../../src/domain/ports/GraphExtension.js';
 import { NodeType } from '../../src/domain/value-objects/NodeType.js';
 import { EdgeType } from '../../src/domain/value-objects/EdgeType.js';
