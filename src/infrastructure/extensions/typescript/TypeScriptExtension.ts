@@ -25,10 +25,10 @@ import { Language, detectLanguage } from '../../../domain/value-objects/Language
 import { NodeFactory } from '../../../domain/services/NodeFactory.js';
 import { EdgeDetector } from '../../../domain/services/EdgeDetector.js';
 import { ESTreeGraphConverter } from '../../../domain/services/ast/ESTreeGraphConverter.js';
-import { ESTreeTransformer } from '../../adapters/parsers/typescript/ESTreeTransformer.js';
-import { TSSymbolExtractor } from '../../adapters/parsers/typescript/TSSymbolExtractor.js';
-import { TSEdgeDetector } from '../../adapters/parsers/typescript/TSEdgeDetector.js';
-import { ProjectServiceAdapter } from '../../adapters/parsers/typescript/project-service/ProjectServiceAdapter.js';
+import { ESTreeTransformer } from './ESTreeTransformer.js';
+import { TSSymbolExtractor } from './TSSymbolExtractor.js';
+import { TSEdgeDetector } from './TSEdgeDetector.js';
+import { ProjectServiceAdapter } from './project-service/ProjectServiceAdapter.js';
 
 export interface TypeScriptExtensionConfig {
   // Project Service options

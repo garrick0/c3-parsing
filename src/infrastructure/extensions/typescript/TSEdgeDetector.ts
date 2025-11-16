@@ -8,8 +8,8 @@
  */
 
 import * as ts from 'typescript';
-import { Edge } from '../../../../domain/entities/Edge.js';
-import { EdgeType } from '../../../../domain/value-objects/EdgeType.js';
+import { Edge } from '../../../domain/entities/Edge.js';
+import { EdgeType } from '../../../domain/value-objects/EdgeType.js';
 import * as helpers from './helpers/nodeHelpers.js';
 
 /**

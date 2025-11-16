@@ -15,8 +15,8 @@ import * as path from 'node:path';
 import { Logger } from 'c3-shared';
 import { createProjectService, type ProjectServiceAndMetadata } from './createProjectService.js';
 import { useProgramFromProjectService, type ASTAndProgram, type ParseSettings } from './useProgramFromProjectService.js';
-import { FileInfo } from '../../../../../domain/entities/FileInfo.js';
-import { ParseResult } from '../../../../../domain/ports/Parser.js';
+import { FileInfo } from '../../../../domain/entities/FileInfo.js';
+import { ParseResult } from '../../../../domain/ports/Parser.js';
 
 export interface ProjectServiceOptions {
   tsconfigRootDir?: string;
