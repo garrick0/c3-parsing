@@ -11,7 +11,7 @@
  */
 
 import * as ts from 'typescript';
-import { server as tsserver } from 'typescript/lib/tsserverlibrary';
+import { server as tsserver } from 'typescript/lib/tsserverlibrary.js';
 import { Logger } from 'c3-shared';
 
 export interface ProjectServiceAndMetadata {

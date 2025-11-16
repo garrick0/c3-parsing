@@ -13,7 +13,7 @@ import type { ProjectServiceAndMetadata } from './createProjectService.js';
 import { minimatch } from 'minimatch';
 import path from 'node:path';
 import * as ts from 'typescript';
-import { server as tsserver } from 'typescript/lib/tsserverlibrary';
+import { server as tsserver } from 'typescript/lib/tsserverlibrary.js';
 import { Logger } from 'c3-shared';
 
 // Critical constants from typescript-eslint
