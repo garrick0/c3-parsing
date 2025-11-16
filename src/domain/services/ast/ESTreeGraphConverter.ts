@@ -17,7 +17,7 @@ import { EdgeDetector } from '../EdgeDetector.js';
 import { FileInfo } from '../../entities/FileInfo.js';
 import { ParseResult } from '../../ports/Parser.js';
 import { traverseESTree } from './ESTreeTraverser.js';
-import { Logger } from 'c3-shared';
+import { Logger } from '@garrick0/c3-shared';
 
 export interface ESTreeGraphConversionOptions {
   includeComments?: boolean;

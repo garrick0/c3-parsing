@@ -7,7 +7,7 @@
 
 import { PropertyGraph } from '../entities/PropertyGraph.js';
 import { GraphRepository } from '../ports/GraphRepository.js';
-import { Logger } from 'c3-shared';
+import { Logger } from '@garrick0/c3-shared';
 import { GraphBuilder } from './GraphBuilder.js';
 import type { GraphExtension, ExtensionContext, LinkContext } from '../ports/GraphExtension.js';
 import { GraphQueryImpl } from '../ports/GraphExtension.js';

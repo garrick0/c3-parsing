@@ -3,7 +3,7 @@
  */
 
 import { GraphRepository } from '../../domain/ports/GraphRepository.js';
-import { Logger } from 'c3-shared';
+import { Logger } from '@garrick0/c3-shared';
 
 export class ClearCacheUseCase {
   constructor(

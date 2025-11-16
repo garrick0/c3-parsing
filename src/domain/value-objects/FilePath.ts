@@ -2,7 +2,7 @@
  * FilePath - Value object for file paths
  */
 
-import { ValueObject } from 'c3-shared';
+import { ValueObject } from '@garrick0/c3-shared';
 
 interface FilePathProps {
   path: string;

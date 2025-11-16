@@ -7,7 +7,7 @@ import { FilesystemExtension } from '../../src/infrastructure/extensions/filesys
 import { ExtensionContext, GraphQueryImpl } from '../../src/domain/ports/GraphExtension.js';
 import { NodeType } from '../../src/domain/value-objects/NodeType.js';
 import { EdgeType } from '../../src/domain/value-objects/EdgeType.js';
-import { createLogger } from 'c3-shared';
+import { createLogger } from '@garrick0/c3-shared';
 import { join } from 'path';
 
 describe('FilesystemExtension', () => {

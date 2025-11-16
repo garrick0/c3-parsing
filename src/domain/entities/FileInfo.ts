@@ -2,7 +2,7 @@
  * FileInfo - Metadata about a file in the codebase
  */
 
-import { Entity } from 'c3-shared';
+import { Entity } from '@garrick0/c3-shared';
 import { Language } from '../value-objects/Language.js';
 
 export class FileInfo extends Entity<string> {

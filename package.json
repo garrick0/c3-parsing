@@ -1,6 +1,6 @@
 {
-  "name": "c3-parsing",
-  "version": "2.0.0",
+  "name": "@garrick0/c3-parsing",
+  "version": "2.0.0-dev.0",
   "description": "Multi-source code analysis with unified property graph - TypeScript, Filesystem, and extensible architecture for Git, Testing, and more!",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -30,6 +30,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "clean": "rm -rf dist coverage .c3-cache",
+    "version:dev": "npm version prerelease --preid=dev.$(git rev-parse --short HEAD) --no-git-tag-version",
+    "version:canary": "npm version prerelease --preid=canary --no-git-tag-version",
     "prepublishOnly": "npm run clean && npm run build && npm run test",
     "prepare": "npm run build"
   },
@@ -48,8 +50,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/garrick0/c3-platform.git",
-    "directory": "packages/c3-parsing"
+    "url": "https://github.com/garrick0/c3-parsing"
   },
   "bugs": {
     "url": "https://github.com/garrick0/c3-platform/issues"
@@ -57,6 +58,10 @@
   "homepage": "https://github.com/garrick0/c3-platform#readme",
   "engines": {
     "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -71,7 +76,7 @@
     "@typescript-eslint/types": "^8.46.4",
     "@typescript-eslint/typescript-estree": "^8.46.4",
     "@typescript-eslint/visitor-keys": "^8.46.4",
-    "c3-shared": "^0.1.0",
+    "@garrick0/c3-shared": "dev",
     "glob": "^11.0.3",
     "lru-cache": "^11.2.2",
     "minimatch": "^10.1.1"
