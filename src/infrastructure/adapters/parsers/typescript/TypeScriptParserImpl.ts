@@ -10,16 +10,15 @@
 
 import * as ts from 'typescript';
 import { BaseParser } from '../base/BaseParser.js';
-import { UnifiedAST } from '../../../../domain/entities/ast/UnifiedAST.js';
 import { FileInfo } from '../../../../domain/entities/FileInfo.js';
 import { ParseResult } from '../../../../domain/ports/Parser.js';
 import { NodeFactory } from '../../../../domain/services/NodeFactory.js';
 import { EdgeDetector } from '../../../../domain/services/EdgeDetector.js';
 import { Logger } from 'c3-shared';
-import { TSASTTransformer } from './TSASTTransformer.js';
+import { ESTreeTransformer } from './ESTreeTransformer.js';
 import { TSSymbolExtractor } from './TSSymbolExtractor.js';
 import { TSEdgeDetector } from './TSEdgeDetector.js';
-import { TSGraphConverter } from './TSGraphConverter.js';
+import { ESTreeGraphConverter } from '../../../../domain/services/ast/ESTreeGraphConverter.js';
 import { ProjectServiceAdapter, type ProjectServiceOptions } from './project-service/index.js';
 
 export interface TypeScriptParserOptions {
@@ -48,10 +47,10 @@ export interface TypeScriptParserOptions {
  */
 export class TypeScriptParserImpl {
   private projectServiceAdapter: ProjectServiceAdapter;
-  private astTransformer: TSASTTransformer;
+  private estreeTransformer: ESTreeTransformer;
   private symbolExtractor: TSSymbolExtractor;
   private tsEdgeDetector: TSEdgeDetector;
-  private tsGraphConverter: TSGraphConverter;
+  private graphConverter: ESTreeGraphConverter;
   private logger: Logger;
   private nodeFactory: NodeFactory;
   private edgeDetector: EdgeDetector;
@@ -80,18 +79,25 @@ export class TypeScriptParserImpl {
       }
     );
 
-    // Initialize transformers (native TypeScript API)
-    this.astTransformer = new TSASTTransformer({
+    // Initialize transformers (ESTree-based)
+    this.estreeTransformer = new ESTreeTransformer(this.logger, {
       includeComments: options.includeComments,
-      includeJSDoc: options.includeJSDoc,
-      includePrivateMembers: options.includePrivateMembers,
+      includeTokens: false,
     });
 
     this.symbolExtractor = new TSSymbolExtractor();
     this.tsEdgeDetector = new TSEdgeDetector();
-    this.tsGraphConverter = new TSGraphConverter(nodeFactory, edgeDetector);
+    
+    this.graphConverter = new ESTreeGraphConverter(
+      this.logger,
+      nodeFactory,
+      edgeDetector,
+      {
+        includePrivateMembers: options.includePrivateMembers,
+      }
+    );
 
-    this.logger.info('TypeScript Parser initialized - using shared Programs for 24x faster parsing');
+    this.logger.info('TypeScript Parser initialized - using ESTree format with shared Programs for 24x faster parsing');
   }
 
   /**
@@ -121,33 +127,22 @@ export class TypeScriptParserImpl {
       const parseTime = performance.now() - startParse;
       this.logger.debug(`Got shared Program in ${parseTime.toFixed(2)}ms`);
 
-      // Transform to Unified AST using native API
+      // Transform to ESTree AST using typescript-eslint
       const startTransform = performance.now();
-      const unifiedAST = await this.astTransformer.transform(
+      const estree = await this.estreeTransformer.transform(
         result.ast,
         result.program, // ← Pass the shared Program!
         fileInfo
       );
       const transformTime = performance.now() - startTransform;
 
-      this.logger.debug(`Transformed to UnifiedAST in ${transformTime.toFixed(2)}ms`);
+      this.logger.debug(`Transformed to ESTree in ${transformTime.toFixed(2)}ms`);
 
-      // Extract symbols using TypeChecker
+      // Extract symbols using TypeChecker (still uses native TS AST!)
       const symbols = await this.symbolExtractor.extractSymbols(
         result.ast,
         result.program // ← TypeChecker comes from this!
       );
-
-      // Add symbols to unified AST
-      for (const symbolType of Object.values(symbols)) {
-        if (Array.isArray(symbolType)) {
-          for (const symbol of symbolType) {
-            if ('name' in symbol && symbol.name) {
-              unifiedAST.symbols.set(symbol.name, symbol as any);
-            }
-          }
-        }
-      }
 
       // Detect edges using TypeChecker (cross-file resolution!)
       const edges = await this.tsEdgeDetector.detectEdges(
@@ -155,12 +150,9 @@ export class TypeScriptParserImpl {
         result.program // ← Can resolve cross-file references!
       );
 
-      // Store edges for graph conversion
-      (unifiedAST as any).detectedEdges = edges;
-
-      // Convert to property graph
+      // Convert ESTree to property graph
       const startConvert = performance.now();
-      const graphResult = await this.tsGraphConverter.convert(unifiedAST, fileInfo);
+      const graphResult = await this.graphConverter.convert(estree, fileInfo);
       const convertTime = performance.now() - startConvert;
 
       this.logger.debug(`Converted to graph in ${convertTime.toFixed(2)}ms`);

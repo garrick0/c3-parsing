@@ -5,9 +5,6 @@
 import { FileInfo } from '../../src/domain/entities/FileInfo.js';
 import { Language } from '../../src/domain/value-objects/Language.js';
 import { Parser, ParseResult } from '../../src/domain/ports/Parser.js';
-import { UnifiedAST } from '../../src/domain/entities/ast/UnifiedAST.js';
-import { ASTNode, ASTNodeKind } from '../../src/domain/entities/ast/ASTNode.js';
-import { createSourceLocation } from '../../src/domain/entities/ast/SourceLocation.js';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 
@@ -49,43 +46,8 @@ export async function parseTestFile(
   return parser.parse(source, fileInfo);
 }
 
-/**
- * Create a simple AST node for testing
- */
-export function createTestASTNode(
-  kind: ASTNodeKind,
-  name: string,
-  file: string = 'test.ts'
-): ASTNode {
-  return {
-    id: `test-node-${Date.now()}`,
-    kind,
-    text: name,
-    children: [],
-    location: createSourceLocation(file, 1, 0, 1, 10),
-    metadata: { name }
-  };
-}
-
-/**
- * Create a simple unified AST for testing
- */
-export function createTestUnifiedAST(
-  rootKind: ASTNodeKind = ASTNodeKind.SOURCE_FILE
-): UnifiedAST {
-  const root = createTestASTNode(rootKind, 'test-root');
-
-  return {
-    root,
-    language: Language.TypeScript,
-    sourceFile: 'test.ts',
-    version: '1.0.0',
-    diagnostics: [],
-    symbols: new Map(),
-    imports: [],
-    exports: []
-  };
-}
+// Note: AST-specific test helpers removed after ESTree migration
+// Tests should focus on property graph output rather than internal AST structure
 
 /**
  * Assert that a ParseResult has expected structure
@@ -97,65 +59,7 @@ export function assertParseResultStructure(result: ParseResult): void {
   expect(result.metadata).toBeInstanceOf(Object);
 }
 
-/**
- * Assert that an AST node has expected properties
- */
-export function assertASTNode(
-  node: ASTNode,
-  expectedKind: ASTNodeKind,
-  expectedName?: string
-): void {
-  expect(node).toBeDefined();
-  expect(node.id).toBeTruthy();
-  expect(node.kind).toBe(expectedKind);
-
-  if (expectedName) {
-    expect(node.metadata.name || node.text).toBe(expectedName);
-  }
-
-  expect(node.location).toBeDefined();
-  expect(node.children).toBeInstanceOf(Array);
-}
-
-/**
- * Count nodes of a specific kind in an AST
- */
-export function countNodesOfKind(
-  root: ASTNode,
-  kind: ASTNodeKind
-): number {
-  let count = 0;
-
-  function traverse(node: ASTNode): void {
-    if (node.kind === kind) {
-      count++;
-    }
-    node.children.forEach(traverse);
-  }
-
-  traverse(root);
-  return count;
-}
-
-/**
- * Find all nodes with a specific name
- */
-export function findNodesByName(
-  root: ASTNode,
-  name: string
-): ASTNode[] {
-  const results: ASTNode[] = [];
-
-  function traverse(node: ASTNode): void {
-    if (node.metadata.name === name || node.text === name) {
-      results.push(node);
-    }
-    node.children.forEach(traverse);
-  }
-
-  traverse(root);
-  return results;
-}
+// Note: AST-specific assertion and traversal helpers removed after ESTree migration
 
 /**
  * Create a mock logger for testing

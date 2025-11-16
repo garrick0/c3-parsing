@@ -2,8 +2,8 @@
  * SymbolExtractor - Port for extracting symbols from AST
  */
 
-import { UnifiedAST, Symbol } from '../entities/ast/UnifiedAST.js';
-import { ASTNode } from '../entities/ast/ASTNode.js';
+import { Symbol } from '../entities/Symbol.js';
+import { ESTreeAST } from '../entities/ast/ESTreeAST.js';
 
 export interface ExtractedSymbols {
   classes: ClassSymbol[];
@@ -85,14 +85,9 @@ export interface ExportSymbol {
 
 export interface SymbolExtractor {
   /**
-   * Extract symbols from a unified AST
+   * Extract symbols from an ESTree AST
    */
-  extractSymbols(ast: UnifiedAST): Promise<ExtractedSymbols>;
-
-  /**
-   * Extract symbols from a specific node
-   */
-  extractFromNode(node: ASTNode): Promise<Symbol[]>;
+  extractSymbols(ast: ESTreeAST): Promise<ExtractedSymbols>;
 
   /**
    * Get extractor name

@@ -4,10 +4,10 @@
 
 import { Parser, ParseResult } from '../../../../domain/ports/Parser.js';
 import { FileInfo } from '../../../../domain/entities/FileInfo.js';
-import { UnifiedAST } from '../../../../domain/entities/ast/UnifiedAST.js';
+import { ESTreeAST } from '../../../../domain/entities/ast/ESTreeAST.js';
 import { NodeFactory } from '../../../../domain/services/NodeFactory.js';
 import { EdgeDetector } from '../../../../domain/services/EdgeDetector.js';
-import { GraphConverter } from '../../../../domain/services/ast/GraphConverter.js';
+import { ESTreeGraphConverter } from '../../../../domain/services/ast/ESTreeGraphConverter.js';
 import { Logger } from 'c3-shared';
 
 export class ParserError extends Error {
@@ -22,14 +22,14 @@ export class ParserError extends Error {
 }
 
 export abstract class BaseParser<TLanguageAST = any> implements Parser {
-  protected graphConverter: GraphConverter;
+  protected graphConverter: ESTreeGraphConverter;
 
   constructor(
     protected readonly logger: Logger,
     protected readonly nodeFactory: NodeFactory,
     protected readonly edgeDetector: EdgeDetector
   ) {
-    this.graphConverter = new GraphConverter(nodeFactory, edgeDetector);
+    this.graphConverter = new ESTreeGraphConverter(logger, nodeFactory, edgeDetector);
   }
 
   /**
@@ -102,20 +102,20 @@ export abstract class BaseParser<TLanguageAST = any> implements Parser {
   ): Promise<TLanguageAST>;
 
   /**
-   * Transform language-specific AST to unified representation
+   * Transform language-specific AST to ESTree representation
    * Must be implemented by language-specific parsers
    */
   protected abstract transformToUnified(
     ast: TLanguageAST,
     fileInfo: FileInfo
-  ): Promise<UnifiedAST>;
+  ): Promise<ESTreeAST>;
 
   /**
-   * Convert unified AST to property graph elements
+   * Convert ESTree AST to property graph elements
    * Can be overridden for custom conversion logic
    */
   protected async convertToGraph(
-    ast: UnifiedAST,
+    ast: ESTreeAST,
     fileInfo: FileInfo
   ): Promise<ParseResult> {
     return this.graphConverter.convert(ast, fileInfo);

@@ -12,12 +12,16 @@ import { GraphBuilder } from './GraphBuilder.js';
 import { FileInfo } from '../entities/FileInfo.js';
 import { Language, detectLanguage } from '../value-objects/Language.js';
 import { createHash } from 'crypto';
+import type { GraphExtension, ExtensionContext, LinkContext } from '../ports/GraphExtension.js';
+import { GraphQueryImpl } from '../ports/GraphExtension.js';
+import type { Node } from '../entities/Node.js';
 
 export interface ParsingOptions {
   maxConcurrency?: number;
   excludePatterns?: string[];
   includePatterns?: string[];
   onProgress?: (current: number, total: number) => void;
+  extensions?: GraphExtension[];  // NEW: Extensions to run
 }
 
 export class ParsingService {
@@ -26,7 +30,8 @@ export class ParsingService {
     private graphRepository: GraphRepository,
     private fileSystem: FileSystem,
     private logger: Logger,
-    private cache?: Cache
+    private cache?: Cache,
+    private extensions: GraphExtension[] = []  // NEW: Accept extensions at construction
   ) {}
 
   /**
@@ -51,8 +56,14 @@ export class ParsingService {
         options.onProgress
       );
 
-      // Build graph from results
+      // Build graph from code parser results
       const graph = this.buildGraphFromResults(results, rootPath);
+
+      // NEW: Run extensions (filesystem, git, etc.)
+      const extensionsToRun = options.extensions || this.extensions;
+      if (extensionsToRun.length > 0) {
+        await this.runExtensions(extensionsToRun, rootPath, graph);
+      }
 
       // Save to repository
       await this.graphRepository.save(graph);
@@ -62,6 +73,7 @@ export class ParsingService {
         files: files.length,
         nodes: graph.getNodeCount(),
         edges: graph.getEdgeCount(),
+        extensions: extensionsToRun.map(e => e.name),
         duration: `${duration.toFixed(2)}ms`,
         cacheStats: this.cache?.getStats()
       });
@@ -227,6 +239,94 @@ export class ParsingService {
     }
 
     return graphBuilder.build();
+  }
+
+  /**
+   * Run extensions to add additional data to the graph
+   * NEW: Extension orchestration
+   */
+  private async runExtensions(
+    extensions: GraphExtension[],
+    rootPath: string,
+    graph: PropertyGraph
+  ): Promise<void> {
+    this.logger.info(`Running ${extensions.length} extension(s)`, {
+      extensions: extensions.map(e => `${e.name}@${e.version}`)
+    });
+
+    // Phase 1: Parse - each extension parses its data source
+    const extensionResults = new Map<GraphExtension, { nodes: Node[], edges: any[] }>();
+    
+    for (const extension of extensions) {
+      try {
+        this.logger.info(`Running extension: ${extension.name}`, {
+          domain: extension.domain,
+          version: extension.version
+        });
+
+        const context: ExtensionContext = {
+          rootPath,
+          logger: this.logger,
+          config: {}
+        };
+
+        const result = await extension.parse(context);
+        
+        this.logger.info(`Extension ${extension.name} complete`, {
+          nodes: result.nodes.length,
+          edges: result.edges.length
+        });
+
+        // Add extension nodes and edges to graph
+        for (const node of result.nodes) {
+          graph.addNode(node);
+        }
+        for (const edge of result.edges) {
+          graph.addEdge(edge);
+        }
+
+        extensionResults.set(extension, result);
+
+      } catch (error) {
+        this.logger.error(`Extension ${extension.name} failed`, error as Error);
+        // Continue with other extensions
+      }
+    }
+
+    // Phase 2: Link - extensions can create edges to nodes from other extensions
+    this.logger.info('Running extension linking phase');
+    
+    // Create node map for query interface
+    const allNodesMap = new Map<string, Node>();
+    for (const node of graph.getNodes()) {
+      allNodesMap.set(node.id, node);
+    }
+
+    for (const extension of extensions) {
+      try {
+        const context: LinkContext = {
+          allNodes: allNodesMap,
+          query: new GraphQueryImpl(allNodesMap),
+          logger: this.logger
+        };
+
+        const linkEdges = await extension.link(context);
+        
+        if (linkEdges.length > 0) {
+          this.logger.info(`Extension ${extension.name} created ${linkEdges.length} link edge(s)`);
+          
+          for (const edge of linkEdges) {
+            graph.addEdge(edge);
+          }
+        }
+
+      } catch (error) {
+        this.logger.error(`Extension ${extension.name} linking failed`, error as Error);
+        // Continue with other extensions
+      }
+    }
+
+    this.logger.info('Extension processing complete');
   }
 
   /**

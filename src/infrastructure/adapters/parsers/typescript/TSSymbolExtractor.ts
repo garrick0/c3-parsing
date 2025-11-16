@@ -8,7 +8,8 @@
  */
 
 import * as ts from 'typescript';
-import { Symbol, SymbolKind } from '../../../../domain/entities/ast/UnifiedAST.js';
+import { Symbol } from '../../../../domain/entities/Symbol.js';
+import { SymbolKind } from '../../../../domain/value-objects/SymbolKind.js';
 import { ExtractedSymbols } from '../../../../domain/ports/SymbolExtractor.js';
 import * as helpers from './helpers/nodeHelpers.js';
 

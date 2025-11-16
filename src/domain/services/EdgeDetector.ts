@@ -2,8 +2,9 @@
  * EdgeDetector - Detects edges/relationships between nodes
  */
 
-import { Edge } from '../entities/Edge.js';
+import { Edge, EdgeMetadata } from '../entities/Edge.js';
 import { EdgeType } from '../value-objects/EdgeType.js';
+import type { SourceMetadata } from '../entities/Node.js';
 
 export class EdgeDetector {
   private edgeCounter = 0;
@@ -11,48 +12,76 @@ export class EdgeDetector {
   /**
    * Create a dependency edge
    */
-  createDependencyEdge(fromNodeId: string, toNodeId: string): Edge {
+  createDependencyEdge(
+    fromNodeId: string,
+    toNodeId: string,
+    metadata?: EdgeMetadata,
+    source?: SourceMetadata
+  ): Edge {
     return new Edge(
       this.generateId('edge'),
       EdgeType.DEPENDS_ON,
       fromNodeId,
-      toNodeId
+      toNodeId,
+      metadata,
+      source
     );
   }
 
   /**
    * Create an import edge
    */
-  createImportEdge(fromNodeId: string, toNodeId: string): Edge {
+  createImportEdge(
+    fromNodeId: string,
+    toNodeId: string,
+    metadata?: EdgeMetadata,
+    source?: SourceMetadata
+  ): Edge {
     return new Edge(
       this.generateId('edge'),
       EdgeType.IMPORTS,
       fromNodeId,
-      toNodeId
+      toNodeId,
+      metadata,
+      source
     );
   }
 
   /**
    * Create a contains edge
    */
-  createContainsEdge(parentNodeId: string, childNodeId: string): Edge {
+  createContainsEdge(
+    parentNodeId: string,
+    childNodeId: string,
+    metadata?: EdgeMetadata,
+    source?: SourceMetadata
+  ): Edge {
     return new Edge(
       this.generateId('edge'),
       EdgeType.CONTAINS,
       parentNodeId,
-      childNodeId
+      childNodeId,
+      metadata,
+      source
     );
   }
 
   /**
    * Create a calls edge
    */
-  createCallsEdge(callerNodeId: string, calleeNodeId: string): Edge {
+  createCallsEdge(
+    callerNodeId: string,
+    calleeNodeId: string,
+    metadata?: EdgeMetadata,
+    source?: SourceMetadata
+  ): Edge {
     return new Edge(
       this.generateId('edge'),
       EdgeType.CALLS,
       callerNodeId,
-      calleeNodeId
+      calleeNodeId,
+      metadata,
+      source
     );
   }
 

@@ -9,11 +9,11 @@ import {
   NodeFactory,
   EdgeDetector,
   FileInfo,
-  Language
+  Language,
+  CacheManager,
+  ParsingService,
+  InMemoryGraphRepository
 } from '../dist/index.js';
-import { CacheManager } from '../dist/infrastructure/adapters/cache/CacheManager.js';
-import { ParsingService } from '../dist/domain/services/ParsingService.js';
-import { InMemoryGraphRepository } from '../dist/infrastructure/persistence/InMemoryGraphRepository.js';
 import { createLogger } from 'c3-shared';
 
 async function main() {

@@ -13,19 +13,11 @@
  * - 240 files/second throughput
  */
 
-import { TypeScriptParserImpl } from '../src/infrastructure/adapters/parsers/typescript/TypeScriptParserImpl.js';
-import { NodeFactory } from '../src/domain/services/NodeFactory.js';
-import { EdgeDetector } from '../src/domain/services/EdgeDetector.js';
-import { FileInfo } from '../src/domain/entities/FileInfo.js';
-import { Language } from '../src/domain/value-objects/Language.js';
+import { TypeScriptParserImpl, NodeFactory, EdgeDetector, FileInfo, Language } from '../dist/index.js';
+import { createLogger } from 'c3-shared';
 
-// Create a simple console logger
-const logger = {
-  info: (msg: string) => console.log(`[INFO] ${msg}`),
-  debug: (msg: string) => console.log(`[DEBUG] ${msg}`),
-  warn: (msg: string) => console.warn(`[WARN] ${msg}`),
-  error: (msg: string, err?: Error) => console.error(`[ERROR] ${msg}`, err),
-};
+// Create a logger
+const logger = createLogger('ProjectServiceExample');
 
 async function main() {
   console.log('='.repeat(60));
