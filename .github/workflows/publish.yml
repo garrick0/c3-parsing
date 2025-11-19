@@ -104,6 +104,21 @@ jobs:
           echo "npm install @garrick0/c3-parsing@dev" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
+      - name: Notify orchestrator
+        if: success()
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          repository: garrick0/c3-platform
+          event-type: dependency_updated
+          client-payload: |
+            {
+              "repo": "${{ github.repository }}",
+              "version": "${{ steps.version.outputs.version }}",
+              "sha": "${{ github.sha }}",
+              "workflow_run_id": "${{ github.run_id }}"
+            }
+
   publish-release:
     needs: test
     if: github.event_name == 'workflow_dispatch'
@@ -191,4 +206,20 @@ jobs:
             echo "npm install @garrick0/c3-parsing@latest" >> $GITHUB_STEP_SUMMARY
           fi
           echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify orchestrator
+        if: success()
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          repository: garrick0/c3-platform
+          event-type: dependency_updated
+          client-payload: |
+            {
+              "repo": "${{ github.repository }}",
+              "version": "${{ steps.version.outputs.version }}",
+              "sha": "${{ github.sha }}",
+              "workflow_run_id": "${{ github.run_id }}",
+              "release_type": "${{ inputs.release_type }}"
+            }
 
